@@ -3,9 +3,11 @@ import undetected_chromedriver as uc
 
 def getDriver():
     # options = uc.ChromeOptions()
-    # options.add_argument("start-maximized")
 
     driver = uc.Chrome()
+    
+    # Эти параменты теоретически могут отличаться на разных системах
+    # При этом - те же параментры прекрастно гуглятся, поэтому - оставлю
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         'source': '''
             window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
@@ -16,6 +18,7 @@ def getDriver():
             window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
         '''})
     
+    # Скрываем работу селениум, юзерагента нагуглил
     stealth(driver = driver,
             user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                    'Chrome/83.0.4103.53 Safari/537.36',
@@ -26,10 +29,11 @@ def getDriver():
             renderer = "Intel Iris OpenGL Engine",
             fix_hairline = True,
             run_on_insecure_origins = True,)
+    
     return driver
 
 def main():
-    getDriver()
+    return getDriver()
 
 if __name__  == '__main__':
     main()
