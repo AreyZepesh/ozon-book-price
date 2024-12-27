@@ -1,6 +1,7 @@
 import sqlite3
+import itertools
 
-def createDB(dbname="ozon-books.db"):
+def createDB(dbname):
     connect = sqlite3.connect(dbname)
     cursor = connect.cursor()
     
@@ -98,7 +99,96 @@ def createViews(cursor):
                     FROM priceS
                     LEFT JOIN books ON priceS.book_id = books.id
                     """)
-                    
+
+def getISBNs(id, dbname) -> list:
+    connect = sqlite3.connect(dbname)
+    cursor = connect.cursor()
+
+    cursor.execute("""
+                    SELECT isbn FROM isbnS
+                    WHERE book_id IN (?)
+                    """, (id,))
+    
+    isbnS = [s[0] for s in cursor.fetchall()]
+    connect.close()
+    return isbnS
+
+def getArticles(id, dbname) -> list:
+    connect = sqlite3.connect(dbname)
+    cursor = connect.cursor()
+
+    cursor.execute("""
+                    SELECT article FROM articleS
+                    WHERE book_id IN (?)
+                    """, (id,))
+    articleS = [s[0] for s in cursor.fetchall()]
+    connect.close()
+    return articleS
+
+def getBooks(dbname) -> list:
+    bookS = []
+
+    con = sqlite3.connect(dbname)
+    cursor = con.cursor()
+    cursor.execute("PRAGMA table_info('books_view')")
+    keyList = [k[1] for k in cursor.fetchall()]
+    cursor.execute('SELECT * FROM books_view')
+
+    for book in cursor.fetchall():
+        t_book = {}
+
+        for k, v in itertools.zip_longest(keyList, book):
+            t_book[k] = v
+
+        if "have_isbn" in t_book:
+            if t_book["have_isbn"] > 0:
+                t_book['isbnS'] = getISBNs(t_book["id"], dbname)
+            else:
+                t_book['isbnS'] = []
+        if 'have_article' in t_book:
+            if t_book["have_article"] > 0:
+                t_book['articleS'] = getArticles(t_book["id"], dbname)
+            else:
+                t_book['articleS'] = []
+
+        bookS.append(t_book)
+
+    return bookS
+
+# TODO добавление книги из класса
+def addBook(book, dbname):
+    connect = sqlite3.connect(dbname)
+    cursor = connect.cursor()
+    
+    try:
+        cursor.execute('BEGIN')
+        book_dict = {}
+        cursor.execute("""INSERT INTO bookS (title, author, year_start, year_end, publisher_id)
+                    VALUES ?
+                    """, book_dict)
+
+        cursor.execute('COMMIT')
+
+    except Exception as ex:
+        # TODO LOG
+        cursor.execute('ROLLBACK')
+        raise ex
+    
+    finally:
+        connect.commit()
+        connect.close()
+
+def addPublisher(publisher, publisher_id, dbname):
+    pass
+
+def addISBN(id, dbname):
+    pass
+
+def addArticles(id, dbname):
+    pass
+
+def getBookID(title, dbname):
+    pass
 
 def insertDataTest(cursor):
         cursor.execute("""INSERT INTO isbnS (isbn,book_id,id)
@@ -112,37 +202,16 @@ def insertDataTest(cursor):
                     (NULL,NULL,NULL,'Сапковский','Свет вечный',2)
                     """)
 
-def getISBNs(id, dbname="ozon-books.db"):
-    connect = sqlite3.connect(dbname)
-    cursor = connect.cursor()
-
-    cursor.execute("""
-                    SELECT isbn FROM isbnS
-                    WHERE book_id IN (?)
-                    """, (id,))
-    
-    isbnS = [s[0] for s in cursor.fetchall()]
-    connect.close()
-    return isbnS
-
-def getARTICLEs(id, dbname="ozon-books.db"):
-    connect = sqlite3.connect(dbname)
-    cursor = connect.cursor()
-
-    cursor.execute("""
-                    SELECT article FROM articleS
-                    WHERE book_id IN (?)
-                    """, (id,))
-    articleS = [s[0] for s in cursor.fetchall()]
-    connect.close()
-    return articleS
-
-    
-
-
-
 def main():
-    createDB()
+    dbname = "ozon-books2.db"
+    # createDB(dbname)
+    bookS = getBooks(dbname)
+    
+    print()
+    for book in bookS:
+        print(book)
+        print()
+
     pass
 
 if __name__  == '__main__':
