@@ -108,7 +108,7 @@ def createViews(cursor) -> None:
                     """)
 
 
-# Добавление/получшение книг, isbn, артиклей, издателей
+# Добавление/получение книг, isbn, артиклей, издателей
 def addBook(book, dbname=DEFAULT_DB) -> None:
     """Добавление или обновление книги в БД"""
     # TODO ? возврат данных книги в виде словаря (для обновления класса книги)
@@ -254,15 +254,6 @@ def insertDataTest(cursor):
                     """)
 
 def main():
-    dbname = "ozon-books2.db"
-    # createDB(dbname)
-    bookS = getAllBooks(dbname)
-    
-    print()
-    for book in bookS:
-        print(book)
-        print()
-
     pass
 
 if __name__  == '__main__':
