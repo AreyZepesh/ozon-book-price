@@ -25,6 +25,8 @@ class Book:
     def sendToDB(self):
         sqliteDB.addBook((self.title, self.author, self.year_start, self.year_end))
         self.getID()
+        if len(self.isbnS) > 0:
+            pass
 
     def getID(self):
         self.id = sqliteDB.getBookID(self.title)
@@ -59,6 +61,7 @@ class Book:
         else:
             self.getID()
             self.getArticles()
+
 
 
 def main():
