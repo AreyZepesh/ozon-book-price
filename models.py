@@ -7,7 +7,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-
+from sqlalchemy.orm import Session
 from datetime import datetime
 
 DEFAULT_DB = "ozon-book.db"
@@ -86,7 +86,15 @@ def CreateDB(dbname = DEFAULT_DB, recreate=False, echo=False):
     Base.metadata.create_all(bind=engine)
     engine.dispose()
 
+def inSession(fn):
+    def wrapper(*args, **kwargs):
+        with Session(autoflush=False, bind=getEngine()) as db:
+            kwargs['db'] = db
+            fn(*args, **kwargs)
+    return wrapper
+
 def main():
+    CreateDB(recreate=True)
     pass
 
 if __name__  == '__main__':
