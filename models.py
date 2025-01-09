@@ -14,7 +14,11 @@ DEFAULT_DB = "ozon-book.db"
 
 """ Классы """
 # Base должен быть предком других моделей таблиц
-class Base(DeclarativeBase): pass
+class Base(DeclarativeBase): #pass
+    def searchAttr(self):
+        """Возвращает словарь, связанный с аттрибутом имеющего опцию QNIQEU: 
+        {название: значение}"""
+        pass
 
 class Book(Base):
     __tablename__ = 'books'
@@ -26,47 +30,49 @@ class Book(Base):
     year_end = mapped_column(Integer)
     options = mapped_column(Text)
 
-    isbns = relationship("ISBN", back_populates='book')
-    articles = relationship("Article", back_populates='book')
-    prices = relationship("Price", back_populates='book')
+    isbns = relationship("ISBN", back_populates='book', cascade="all, delete-orphan")
+    articles = relationship("Article", back_populates='book', cascade="all, delete-orphan")
+    prices = relationship("Price", back_populates='book', cascade="all, delete-orphan")
 
-    def __init__(self, **kw: Any):
-        # if "isbns" in kw:
-        #     kw["isbns"] = []
-        # if "articles" in kw:
-        #     kw["articles"] = []
-        super().__init__(**kw)
+    def searchAttr(self):
+        return {"title": self.title}
 
 class ISBN(Base):
     __tablename__ = 'isbns'
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    book_id = mapped_column(Integer, ForeignKey('books.id'), index=True)
+    book_id = mapped_column(Integer, ForeignKey('books.id', ondelete='CASCADE'), index=True)
     isbn = mapped_column(Text, nullable=False, unique=True)
 
     book = relationship('Book', back_populates='isbns')
 
+    def searchAttr(self):
+        return {"isbn": self.isbn}
+    
 class Article(Base):
     __tablename__ = 'articles'
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    book_id = mapped_column(Integer, ForeignKey('books.id'), index=True)
+    book_id = mapped_column(Integer, ForeignKey('books.id', ondelete='CASCADE'), index=True)
     article = mapped_column(Text, nullable=False, unique=True)
 
     book = relationship('Book', back_populates='articles')
 
+    def searchAttr(self):
+        return {"article": self.article}
+    
 class Price(Base):
     __tablename__ = 'Prices'
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    book_id = mapped_column(Integer, ForeignKey('books.id'), index=True)
+    book_id = mapped_column(Integer, ForeignKey('books.id', ondelete='CASCADE'), index=True)
     datetime = mapped_column(DateTime, default=datetime.now)
     price = mapped_column(Integer)
     article = mapped_column(Integer)
     typeSearch = mapped_column(Text)
 
     book = relationship('Book', back_populates='prices')
-
+    
 """ Функции """
 def getEngine(dbname = DEFAULT_DB, echo=False):
     # отновительный путь через :///*.db
@@ -94,7 +100,11 @@ def inSession(fn):
     return wrapper
 
 def main():
-    CreateDB(recreate=True)
+    # CreateDB(recreate=True)
+    # a = Book(title="test")
+    # b = {'title':"test2"}
+    # a.upda(b)
+    # print(a.title)
     pass
 
 if __name__  == '__main__':
