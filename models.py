@@ -1,3 +1,4 @@
+from utils import createViewS
 from typing import Any
 from sqlalchemy import create_engine
 from sqlalchemy import Integer
@@ -91,6 +92,7 @@ def CreateDB(dbname = DEFAULT_DB, recreate=False, echo=False):
     engine = getEngine(dbname=dbname, echo=echo)
     Base.metadata.create_all(bind=engine)
     engine.dispose()
+    createViewS(DEFAULT_DB)
 
 def inSession(fn):
     """Декаратор, написал, но не использовал"""
@@ -101,10 +103,6 @@ def inSession(fn):
 
 def main():
     # CreateDB(recreate=True)
-    # a = Book(title="test")
-    # b = {'title':"test2"}
-    # a.upda(b)
-    # print(a.title)
     pass
 
 if __name__  == '__main__':

@@ -73,8 +73,48 @@ def csvToDict(csvPath) -> list:
     
     return data
 
-def createViewS():
-    pass
+def createViewS(dbname: str):
+    import sqlite3
+    connect = sqlite3.connect(dbname)
+    cursor = connect.cursor()
+
+    try:
+        cursor.execute('BEGIN')
+
+        cursor.execute("""CREATE VIEW IF NOT EXISTS books_view AS
+                            SELECT books.id AS book_id, 
+                                title, author, year_start, year_end, options,
+                                COUNT(DISTINCT isbns.isbn) AS have_isbn,
+                                COUNT(DISTINCT articles.article) AS have_article
+                            FROM books
+                                LEFT JOIN isbns ON books.id = isbns.book_id
+                                LEFT JOIN articles ON bookS.id = articles.book_id
+                            GROUP BY books.id
+                        """)
+        cursor.execute("""CREATE VIEW IF NOT EXISTS articles_view AS
+                            SELECT books.id AS book_id,
+                                title, author,
+                                articles.article AS article
+                            FROM books
+                                INNER JOIN articles ON books.id = articles.book_id;
+                        """)
+        cursor.execute("""CREATE VIEW IF NOT EXISTS isbns_view AS
+                            SELECT books.id AS book_id,
+                                title, author,
+                                isbns.isbn AS isbn
+                            FROM books
+                                INNER JOIN isbns ON books.id = isbns.book_id;
+                        """)
+        
+        cursor.execute('COMMIT')
+
+    except Exception as ex:
+        cursor.execute('ROLLBACK')
+        raise ex
+
+    finally:
+        connect.commit()
+        connect.close()
 
 def main():
     pass

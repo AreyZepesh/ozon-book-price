@@ -3,7 +3,6 @@ import utils
 from sqlalchemy.orm import Session
 
 """TODO 
-- вифки
 - получение данных"""
 
 def csvToDB(csvPath: str, echo=False) -> None:
@@ -31,10 +30,10 @@ def getId(obj, echo=False) -> int|None:
       из любой модели таблиц БД (models.py)"""
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
         foo = db.query(obj.__class__).filter_by(**obj.searchAttr()).first()
-        if foo is not None:
-            return foo.id
-        else:
-            return None
+    if foo is not None:
+        return foo.id
+    else:
+        return None
             
 def addBookToDB(book: models.Book, echo=False) -> int:
     """Добавить книгу в дб, вернуть ID"""
@@ -42,7 +41,7 @@ def addBookToDB(book: models.Book, echo=False) -> int:
         db.add(book)
         db.commit()
         db.refresh(book)
-        return book.id
+    return book.id
 
 def updateBook(id: int, book: dict, db=None, echo=False) -> None:
     """Обновить книгу по id"""
@@ -66,8 +65,29 @@ def addArticle(articles: list, book_id: int, echo=False) -> None:
                 db.add(models.Article(book_id=book_id, article=a))
         db.commit()
 
+def getAllBooks(echo=False) -> list:
+    """Возвращает список словарей книг и их данными, isbn и артиклями"""
+    books = []
+    with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
+        all_book_obj = db.query(models.Book).all()
+        for book_obj in all_book_obj:
+            isbns = [i.isbn for i in book_obj.isbns]
+            articles = [a.article for a in book_obj.articles]
+            books.append({'id': book_obj.id,
+                        'title': book_obj.title,
+                        'author': book_obj.author,
+                        'year_start': book_obj.year_start,
+                        'year_end': book_obj.year_end,
+                        'isbns': isbns,
+                        'articles': articles,
+                        'options': utils.strToLst(book_obj.options)})
+    return books
+
 def main():
-    csvToDB("./csv/test.csv",echo=0)
+    # csvToDB("./csv/test.csv",echo=0)
+    
+    # from pprint import pprint
+    # pprint(getAllBooks(), sort_dicts=False)
     pass
 
 if __name__  == '__main__':
