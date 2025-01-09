@@ -73,13 +73,10 @@ def csvToDict(csvPath) -> list:
     
     return data
 
+def createViewS():
+    pass
 
 def main():
-    # x = csvToDict("test.csv")
-    # for y in x:
-    #     print(y)
-    # print(len(x))
-    # dictToCSV(x)
     pass
 
 if __name__  == '__main__':

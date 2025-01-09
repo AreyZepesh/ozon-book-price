@@ -44,7 +44,7 @@ def addBookToDB(book: models.Book, echo=False) -> int:
         db.refresh(book)
         return book.id
 
-def updateBook(id: int, book: dict, echo=False) -> None:
+def updateBook(id: int, book: dict, db=None, echo=False) -> None:
     """Обновить книгу по id"""
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
         db.query(models.Book).filter(models.Book.id==id).update(book)
@@ -67,11 +67,7 @@ def addArticle(articles: list, book_id: int, echo=False) -> None:
         db.commit()
 
 def main():
-    csvToDB("./csv/test.csv")
-    # exist_in_DB()
-    # with Session(autoflush=False, bind=models.getEngine(echo=False)) as db:
-    #     o = db.get(models.Book, 1)
-    #     print(vars(o))
+    csvToDB("./csv/test.csv",echo=0)
     pass
 
 if __name__  == '__main__':

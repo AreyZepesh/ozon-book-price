@@ -93,10 +93,10 @@ def CreateDB(dbname = DEFAULT_DB, recreate=False, echo=False):
     engine.dispose()
 
 def inSession(fn):
+    """Декаратор, написал, но не использовал"""
     def wrapper(*args, **kwargs):
-        with Session(autoflush=False, bind=getEngine()) as db:
-            kwargs['db'] = db
-            fn(*args, **kwargs)
+        with Session(autoflush=False, bind=getEngine(echo=False)) as db:
+            fn(*args, db=db, **kwargs)
     return wrapper
 
 def main():
