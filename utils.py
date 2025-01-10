@@ -105,6 +105,12 @@ def createViewS(dbname: str):
                             FROM books
                                 INNER JOIN isbns ON books.id = isbns.book_id;
                         """)
+        cursor.execute("""CREATE VIEW price_view AS
+                            SELECT books.title AS Title,
+                                datetime, price, article, typeSearch
+                            FROM prices
+                                LEFT JOIN books ON prices.book_id = books.id
+                       """)
         
         cursor.execute('COMMIT')
 

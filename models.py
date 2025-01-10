@@ -63,7 +63,7 @@ class Article(Base):
         return {"article": self.article}
     
 class Price(Base):
-    __tablename__ = 'Prices'
+    __tablename__ = 'prices'
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id = mapped_column(Integer, ForeignKey('books.id', ondelete='CASCADE'), index=True)
