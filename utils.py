@@ -21,10 +21,26 @@ def normalizeStr(str: str) -> str:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
     str = str.replace('\t',' ')
+    str = str.replace('\n',' ')
+    str = str.replace('\u2009',' ')
+    str = str.replace(' ', ' ') 
     str = str.strip()
     while '  ' in str:
         str = str.replace('  ', ' ')
     return str
+
+def normalizePrice(str: str) -> int:
+    """Нормализует цену, делает из строки число"""
+    str = normalizeStr(str)
+    str = str.replace('₸','') 
+    str = str.replace('₽','') 
+    str = str.replace('$','') 
+    while ' ' in str:
+        str = str.replace(' ', '')
+    if str.isdigit():
+        return int(str)
+    else:
+        raise TypeError(f'Опа, что то новое, цена: {str}')
 
 def cleanEmptyStr(str: str) -> str:
     """Pаменяет пустые строки на None"""
@@ -73,7 +89,7 @@ def csvToDict(csvPath) -> list:
     
     return data
 
-def createViewS(dbname: str):
+def createViewS(dbname: str) -> None:
     import sqlite3
     connect = sqlite3.connect(dbname)
     cursor = connect.cursor()
