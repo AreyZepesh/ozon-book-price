@@ -11,7 +11,7 @@ PAUSE = True
 def pauseW(fn):
     def wrapper(*args, **kwargs):
         if PAUSE:
-            sleep(2)  # ВРЕМЯ ПАУЗЫ
+            sleep(3)  # ВРЕМЯ ПАУЗЫ
         return fn(*args, **kwargs)
     return wrapper
     
