@@ -83,7 +83,9 @@ def getAllBooks(short = False, echo=False) -> list:
                             'title': book_obj.title})
             else:
                 isbns = [i.isbn for i in book_obj.isbns]
+                isbns = None if isbns == [] else isbns
                 articles = [a.article for a in book_obj.articles]
+                articles = None if articles == [] else articles
                 books.append({'id': book_obj.id,
                             'title': book_obj.title,
                             'author': book_obj.author,

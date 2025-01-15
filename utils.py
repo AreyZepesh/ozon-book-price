@@ -11,9 +11,9 @@ def cleanDict(data: dict) -> dict:
      - заменяет пустые значение на None
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
-    for k,v in data.items():
-        data[k] = normalizeStr(v)
-        data[k] = cleanEmptyStr(v)
+    for k in data.keys():
+        data[k] = normalizeStr(data[k])
+        data[k] = cleanEmptyStr(data[k])
     return data
 
 def normalizeStr(str: str) -> str:
@@ -24,9 +24,9 @@ def normalizeStr(str: str) -> str:
     str = str.replace('\n',' ')
     str = str.replace('\u2009',' ')
     str = str.replace(' ', ' ') 
-    str = str.strip()
     while '  ' in str:
         str = str.replace('  ', ' ')
+    str = str.strip()
     return str
 
 def normalizePrice(str: str) -> int:
@@ -139,6 +139,7 @@ def createViewS(dbname: str) -> None:
         connect.close()
 
 def main():
+    print(csvToDict('./csv/test.csv'))
     pass
 
 if __name__  == '__main__':
