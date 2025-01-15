@@ -3,7 +3,7 @@ def strToLst(str: str, sep: str = ',') -> list:
     tmp =[]
     for i in str.split(sep):
         if i != '':
-            tmp.append(i)
+            tmp.append(normalizeStr(i))
     return tmp
 
 def cleanDict(data: dict) -> dict:
@@ -84,7 +84,6 @@ def csvToDict(csvPath) -> list:
             if row['title'] is not None:
                 row['isbns'] = strToLst(row['isbns'])
                 row['articles'] = strToLst(row['articles'])
-                # row['options'] = strToLst(row['options'])
             data.append(row)
     
     return data

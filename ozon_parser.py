@@ -1,5 +1,6 @@
 import database
 from utils import normalizePrice
+from utils import normalizeStr
 from getDriver import getDriver
 
 import json
@@ -17,14 +18,22 @@ def pauseW(fn):
     return wrapper
     
 @pauseW
-def searchPageData(driver) -> list:
+def findOnSearchPage(driver) -> list:
     """Сбор данных по странице поиска.
     Возвращает список словарей"""
     def _cardData(cardOBJ) -> dict:
         """Подфункция сбора данных с одной карточки"""
         card = {}
+
+        title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
+        if '|' in title:
+            card['title'], card['author'] = title.split('|')
+            card['author'] = normalizeStr(card['author'])
+        else:
+            card['title'], card['author'] = title, None
+        card['title'] = normalizeStr(card['title'])
+
         href = cardOBJ.find_element( By.XPATH, ".//a[@href]" )
-        # card["URL"] = href.get_attribute("href").split('/?')[0]
         card['article'] = href.get_attribute("href").split('/?')[0].split('-')[-1]
         card['price']  = normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
         card['datetime'] = str(datetime.now())
@@ -35,10 +44,18 @@ def searchPageData(driver) -> list:
     return cards
 
 @pauseW
-def productPageData(driver) -> dict:
+def findOnProductPage(driver) -> dict:
     """Сбор данных на странице товара"""
     card = {}
-    # card["URL"] = driver.current_url
+    
+    title = driver.find_element( By.XPATH, "//h1[contains(@class, 'tsHeadline550Medium')]" ).text
+    if '|' in title:
+        card['title'], card['author'] = title.split('|')
+        card['author'] = normalizeStr(card['author'])
+    else:
+        card['title'], card['author'] = title, None
+    card['title'] = normalizeStr(card['title'])
+    
     card['article'] = driver.find_element( By.XPATH, "//div[contains(text(),'Артикул')]" ).text.replace('Артикул: ', '')
     prices = driver.find_elements( By.XPATH, "//div[@data-widget='webPrice']//span" )
     card['price'] = min( [normalizePrice(f.text) for f in prices] ) 
@@ -59,14 +76,18 @@ def saveCookie(driver, file='./tmp/new.json'):
     with open(file, 'w') as file:
         json.dump(driver.get_cookies(), file)
 
-def searchList(book: dict) -> dict:
+def getSearhData(book: dict) -> list:
+    """Получение списка словарей данных, 
+    для поиска и обработки полученных данных.
+    Принимает словарь одной книги из database.getAllBooks().
+    Возвращает список словарей {book_id, title, URL, type}.
+    Словарей на книгу может быть больше одного"""
     def _articleURL(_book) -> list:
         aURLs = []
-        # Генерин URL для артиклей
         if _book['articles']:
             for art in _book['articles']:
                 URL = f"https://ozon.kz/product/{art}"
-                aURLs.append({'book_id': _book['id'], 'URLs': URL, 'type': 'article'})
+                aURLs.append({'book_id': _book['id'], 'title': _book['title'], 'URL': URL, 'type': 'article'})
         return aURLs
 
     def _isbnURL(_book, _param) -> list:
@@ -74,7 +95,7 @@ def searchList(book: dict) -> dict:
         if _book['isbns']:
             for isbn in _book['isbns']:
                 URL = f"https://ozon.kz/category/knigi-16500/?sorting=price{_param}&text={isbn}"
-                iURLs.append({'book_id': _book['id'], 'URLs': URL, 'type': 'isbn'})
+                iURLs.append({'book_id': _book['id'], 'title': _book['title'], 'URL': URL, 'type': 'isbn'})
         return iURLs
 
     def _parametrs(_book) -> str:
@@ -113,49 +134,51 @@ def searchList(book: dict) -> dict:
 
     add_search_param = _parametrs(book)
     URL = f"https://ozon.kz/category/knigi-16500/?sorting=price{add_search_param}&text={search_text}"
-    URLs.append({'book_id': book['id'], 'URLs': URL, 'type': 'text'})
+    URLs.append({'book_id': book['id'], 'title': book['title'], 'URL': URL, 'type': 'text'})
     URLs += _isbnURL(book, add_search_param)
     URLs += _articleURL(book)
 
     return URLs
 
-def getAllURLs():
+def getAllData() -> list:
+    """Возвращает список словарей 
+    {book_id, title, URL, type}.
+    Словарей на книгу может быть больше одного"""
     allBooks = database.getAllBooks()
     URLs = []
     for book in allBooks:
-        URLs += searchList(book)
+        URLs += getSearhData(book)
     return URLs
 
 def main():
-    URLs = getAllURLs()
-    # print(len(URLs))
-    for url in getAllURLs():
-        print(url)
-    # baseURL = "https://ozon.kz/"
-    # bookURL = "https://ozon.kz/category/knigi-16500/?sorting=price&text=5-251-00198-3"
-    # productURL = "https://ozon.kz/product/1792268276"
+    # TODO 
+    # проверку ссылки
+    # проверку названия книги
+    # минимальную цену в findOnSearchPage вместо всех
+    # объединение входного и выходного словаря
 
-    # driver = getDriver()
-    # driver.get(baseURL)
-    # driver.implicitly_wait(5)
-    # # sleep(5)
+    # {'book_id': 1, 'title': 'Свет вечный', 'URL': 'https://ozon.kz/category/knigi-16500/?sorting=price&text=Свет+вечный+Сапковский', 'type': 'text'}
+    baseURL = "https://ozon.kz/"
+    driver = getDriver()
+    driver.get(baseURL)
+    driver.implicitly_wait(5)
 
-    # # addCookie(driver)
+    res = []
+    for item in getAllData(): 
+        print(item)
+        driver.get(item['URL'])
+        if item["type"] == "article":
+            res.append(findOnProductPage(driver))
+        else:
+            res.extend(findOnSearchPage(driver))
 
-    # driver.get(bookURL)
-    # res = searchPageData(driver)
+    for r in res:
+        print(r)
 
-    # driver.get(productURL)
-    # res.append( productPageData(driver) )
+    sleep(2)
+    driver.close()
+    # driver.quit()
 
-    # # saveCookie(driver)
-
-    # sleep(2)
-    # driver.close()
-    # # driver.quit()
-
-    # for r in res:
-    #     print(r)
 
     pass
 if __name__  == '__main__':
