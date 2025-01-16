@@ -1,6 +1,5 @@
 import database
-from utils import normalizePrice
-from utils import normalizeStr
+import utils
 from getDriver import getDriver
 
 import json
@@ -28,14 +27,14 @@ def findOnSearchPage(driver) -> list:
         title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
         if '|' in title:
             card['title'], card['author'] = title.split('|')
-            card['author'] = normalizeStr(card['author'])
+            card['author'] = utils.normalizeStr(card['author'])
         else:
             card['title'], card['author'] = title, None
-        card['title'] = normalizeStr(card['title'])
+        card['title'] = utils.normalizeStr(card['title'])
 
         href = cardOBJ.find_element( By.XPATH, ".//a[@href]" )
         card['article'] = href.get_attribute("href").split('/?')[0].split('-')[-1]
-        card['price']  = normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
+        card['price']  = utils.normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
         card['datetime'] = str(datetime.now())
         return card
     
@@ -51,14 +50,14 @@ def findOnProductPage(driver) -> dict:
     title = driver.find_element( By.XPATH, "//h1[contains(@class, 'tsHeadline550Medium')]" ).text
     if '|' in title:
         card['title'], card['author'] = title.split('|')
-        card['author'] = normalizeStr(card['author'])
+        card['author'] = utils.normalizeStr(card['author'])
     else:
         card['title'], card['author'] = title, None
-    card['title'] = normalizeStr(card['title'])
+    card['title'] = utils.normalizeStr(card['title'])
     
     card['article'] = driver.find_element( By.XPATH, "//div[contains(text(),'Артикул')]" ).text.replace('Артикул: ', '')
     prices = driver.find_elements( By.XPATH, "//div[@data-widget='webPrice']//span" )
-    card['price'] = min( [normalizePrice(f.text) for f in prices] ) 
+    card['price'] = min( [utils.normalizePrice(f.text) for f in prices] ) 
     card['datetime'] = str(datetime.now())
     return card
 
@@ -141,7 +140,8 @@ def getSearhData(book: dict) -> list:
     return URLs
 
 def getAllData() -> list:
-    """Возвращает список словарей 
+    """Данные для поиска, по всем книгам.
+    Возвращает список словарей 
     {book_id, title, URL, type}.
     Словарей на книгу может быть больше одного"""
     allBooks = database.getAllBooks()
@@ -152,9 +152,10 @@ def getAllData() -> list:
 
 def main():
     # TODO 
-    # проверку ссылки
-    # проверку названия книги
-    # минимальную цену в findOnSearchPage вместо всех
+    # проверку ссылки + 'товаров сейчас нет'
+    # проверку названия книги - utils.isTITLEinSTR()
+    # минимальную цену в переборе по артикулам и исбн (если их больше одного)
+    # findOnSearchPage вместо всех / не обходить все, а вернуть первую, так как сортировка по цене? category/knigi-16500    sorting=price
     # объединение входного и выходного словаря
 
     # {'book_id': 1, 'title': 'Свет вечный', 'URL': 'https://ozon.kz/category/knigi-16500/?sorting=price&text=Свет+вечный+Сапковский', 'type': 'text'}

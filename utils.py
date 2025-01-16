@@ -1,7 +1,7 @@
-def strToLst(str: str, sep: str = ',') -> list:
-    if str is None: return None
+def strToLst(string: str, sep: str = ',') -> list:
+    if string is None: return None
     tmp =[]
-    for i in str.split(sep):
+    for i in string.split(sep):
         if i != '':
             tmp.append(normalizeStr(i))
     return tmp
@@ -16,35 +16,36 @@ def cleanDict(data: dict) -> dict:
         data[k] = cleanEmptyStr(data[k])
     return data
 
-def normalizeStr(str: str) -> str:
+def normalizeStr(string: str) -> str:
     """Нормализует данные в строке:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
-    str = str.replace('\t',' ')
-    str = str.replace('\n',' ')
-    str = str.replace('\u2009',' ')
-    str = str.replace(' ', ' ') 
-    while '  ' in str:
-        str = str.replace('  ', ' ')
-    str = str.strip()
-    return str
+    string = string.replace('\t',' ')
+    string = string.replace('\n',' ')
+    string = string.replace('\u2009',' ')
+    string = string.replace(' ', ' ') 
+    while '  ' in string:
+        string = string.replace('  ', ' ')
+    string = string.strip()
+    return string
 
-def normalizePrice(str: str) -> int:
+def normalizePrice(string: str) -> int:
     """Нормализует цену, делает из строки число"""
-    str = normalizeStr(str)
-    str = str.replace('₸','') 
-    str = str.replace('₽','') 
-    str = str.replace('$','') 
-    while ' ' in str:
-        str = str.replace(' ', '')
-    if str.isdigit():
-        return int(str)
-    else:
-        raise TypeError(f'Опа, что то новое, цена: {str}')
+    return int("".join(c for c in string if  c.isdecimal()))
+    # string = normalizeStr(string)
+    # string = string.replace('₸','') 
+    # string = string.replace('₽','') 
+    # string = string.replace('$','') 
+    # while ' ' in string:
+    #     string = string.replace(' ', '')
+    # if string.isdigit():
+    #     return int(string)
+    # else:
+    #     raise TypeError(f'Опа, что то новое, цена: {string}')
 
-def cleanEmptyStr(str: str) -> str:
+def cleanEmptyStr(string: str) -> str:
     """Pаменяет пустые строки на None"""
-    return None if str == '' else str
+    return None if string == '' else string
 
 def getSampleCSV(csvPath: str ='sample.csv') -> None:
     import csv
@@ -136,6 +137,38 @@ def createViewS(dbname: str) -> None:
     finally:
         connect.commit()
         connect.close()
+
+def strFromComparison(string: str) -> str:
+    """Убирает из строки все кроме букв, цифр и пробелов.
+    Так же нормализует"""
+    import re
+    string = re.sub("[^a-zA-Zа-яА-Я0-9 ]", " ", string)
+    string = normalizeStr(string)
+    string = string.lower()
+    return string
+
+def isTITLEinSTR(title: str, string: str):
+    """Проверяет вхождение title в string.
+    Сперва проверяется налицие title как есть: 
+    если является частью string, вернется True.
+    Иначе запускается цикл, по слову из title:
+    если одного из слов нет string, вернется False;
+    иначе, если все слова содержатся в строке, вернется True.
+    Я понимаю что такой метод оставляет возможность для ошибки.
+    Для фикса этого добавил проверку наличия точки и длины title больше 2"""
+    haveDot = True if "." in title else False
+    title = strFromComparison(title)
+    string = strFromComparison(string)
+    if title in string:
+        return True
+    else:
+        if haveDot and (' ' in title) and (len(title.strip(' ')) > 2):
+            for word in title.strip(' '): 
+                if word not in string:
+                    return False
+            return True
+        else: 
+            return False
 
 def main():
     print(csvToDict('./csv/test.csv'))
