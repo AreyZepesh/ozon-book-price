@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 
 PAUSE = True
 PRICEDCT = {'book_id': None, 'datetime': None, 'price': None, 'article': None, 'typeSearch': None}
+DATE_TIME = datetime.now().strftime("%Y-%m-%d %H:%M")
 
 def pauseW(fn):
     def wrapper(*args, **kwargs):
@@ -40,7 +41,7 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
         href = cardOBJ.find_element( By.XPATH, ".//a[@href]" )
         card['article'] = href.get_attribute("href").split('/?')[0].split('-')[-1]
         card['price']  = utils.normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
-        card['datetime'] = str(datetime.now())
+        card['datetime'] = DATE_TIME
         card['typeSearch'] = type
         return card
     
@@ -77,7 +78,7 @@ def findOnProductPage(driver, book_id, book_title, type) -> dict:
     card['article'] = driver.find_element( By.XPATH, "//div[contains(text(),'Артикул')]" ).text.replace('Артикул: ', '')
     prices = driver.find_elements( By.XPATH, "//div[@data-widget='webPrice']//span" )
     card['price'] = min( [utils.normalizePrice(f.text) for f in prices] ) 
-    card['datetime'] = str(datetime.now())
+    card['datetime'] = DATE_TIME
     card['typeSearch'] = type
     return card
 
@@ -181,6 +182,25 @@ def getAllData() -> list:
             allData.append(data)
     return allData
 
+def splitType(lst: list) -> list:
+    """Принимает список словарей, делит по id и типу"""
+    data = {}
+    for item in lst:
+        data.setdefault(f'{item['book_id']}_{item['typeSearch']}', list())
+        data[f'{item['book_id']}_{item['typeSearch']}'].append(item)
+
+
+    for k,v in data.items():
+        if len(v) > 1:
+            minPrice(v)
+
+def minPrice(lst: list):
+    prices = [item["price"] for item in lst]
+    print(min(prices))
+    for w in lst:
+        print(w)
+
+
 def main():
     # TODO 
     # минимальную цену в переборе по артикулам и исбн (если их больше одного)
@@ -211,16 +231,16 @@ def main():
                 elif "category/knigi-16500" in driver.current_url:
                     find = findOnSearchPage(driver, book['book_id'], book['title'], item['type'])
 
-                if find is not None:
+                if find is not None and find not in res:
                     res.append(find)
 
             except Exception as ex:
                 print(ex)
-
+                
     # тута можно убрать лишние результаты по книге
                 
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
-
+    
     with open('./tmp/out.json', 'w', encoding='utf8') as file:
         json.dump(res, file)
     utils.dictToCSV(res, f'./tmp/out.csv')
