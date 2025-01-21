@@ -149,7 +149,7 @@ def strFromComparison(string: str) -> str:
 
 def isTITLEinSTR(title: str, string: str):
     """Проверяет вхождение title в string.
-    Сперва проверяется налицие title как есть: 
+    Сперва проверяется наличие title как есть: 
     если является частью string, вернется True.
     Иначе запускается цикл, по слову из title:
     если одного из слов нет string, вернется False;
@@ -161,14 +161,12 @@ def isTITLEinSTR(title: str, string: str):
     string = strFromComparison(string)
     if title in string:
         return True
-    else:
-        if haveDot and (' ' in title) and (len(title.strip(' ')) > 2):
-            for word in title.strip(' '): 
-                if word not in string:
-                    return False
-            return True
-        else: 
-            return False
+    if haveDot and (' ' in title) and (len(title.strip(' ')) > 2):
+        for word in title.strip(' '): 
+            if word not in string:
+                return False
+        return True
+    return False
 
 def main():
     print(csvToDict('./csv/test.csv'))

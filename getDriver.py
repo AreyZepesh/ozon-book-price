@@ -1,10 +1,10 @@
 from selenium_stealth import stealth
 import undetected_chromedriver as uc
 
-def getDriver():
+def getDriver(headless=False):
     # options = uc.ChromeOptions()
 
-    driver = uc.Chrome()
+    driver = uc.Chrome(headless=headless)
     
     # Эти параменты теоретически могут отличаться на разных системах
     # При этом - те же параментры прекрастно гуглятся, поэтому - оставлю
@@ -29,7 +29,7 @@ def getDriver():
             renderer = "Intel Iris OpenGL Engine",
             fix_hairline = True,
             run_on_insecure_origins = True,)
-    
+    driver.implicitly_wait(10)
     return driver
 
 def main():
