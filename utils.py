@@ -32,22 +32,12 @@ def normalizeStr(string: str) -> str:
 def normalizePrice(string: str) -> int:
     """Нормализует цену, делает из строки число"""
     return int("".join(c for c in string if  c.isdecimal()))
-    # string = normalizeStr(string)
-    # string = string.replace('₸','') 
-    # string = string.replace('₽','') 
-    # string = string.replace('$','') 
-    # while ' ' in string:
-    #     string = string.replace(' ', '')
-    # if string.isdigit():
-    #     return int(string)
-    # else:
-    #     raise TypeError(f'Опа, что то новое, цена: {string}')
 
 def cleanEmptyStr(string: str) -> str:
     """Pаменяет пустые строки на None"""
     return None if string == '' else string
 
-def getSampleCSV(csvPath: str ='sample.csv') -> None:
+def getSampleBookCSV(csvPath: str ='sample.csv') -> None:
     import csv
 
     with open(csvPath, 'w', encoding='utf8') as file:
@@ -167,6 +157,16 @@ def isTITLEinSTR(title: str, string: str):
                 return False
         return True
     return False
+
+def minPrice(lst: list) -> dict:
+    """Принимает список словарей. 
+    Возвращает один словарь с минимальной ценой.
+    Должны быть словари, содержащий как минимум:
+    {'price': int}."""
+    minPrice = min([item["price"] for item in lst])
+    for item in lst:
+        if item.get('price', None) == minPrice:
+            return item
 
 def main():
     print(csvToDict('./csv/test.csv'))

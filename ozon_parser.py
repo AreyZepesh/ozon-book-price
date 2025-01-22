@@ -20,24 +20,14 @@ def pauseW(fn):
     
 @pauseW
 def findOnSearchPage(driver, book_id, book_title, type) -> dict:
-    """Сбор данных по странице поиска.
-    Возвращает словарь"""
+    """Сбор данных по странице поиска. Возвращает словарь c минимальной"""
     def _cardData(cardOBJ) -> dict:
         """Подфункция сбора данных с одной карточки"""
-        card = PRICEDCT.copy()
-        card['book_id'] = book_id
-
         title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
         if not utils.isTITLEinSTR(book_title, title):
-            # print('>>> ', title)
             return
-        # if '|' in title:
-        #     card['title'], card['author'] = title.split('|')
-        #     card['author'] = utils.normalizeStr(card['author'])
-        # else:
-        #     card['title'], card['author'] = title, None
-        # card['title'] = utils.normalizeStr(card['title'])
-
+        card = PRICEDCT.copy()
+        card['book_id'] = book_id
         href = cardOBJ.find_element( By.XPATH, ".//a[@href]" )
         card['article'] = href.get_attribute("href").split('/?')[0].split('-')[-1]
         card['price']  = utils.normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
@@ -45,18 +35,28 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
         card['typeSearch'] = type
         return card
     
-    if 'sorting=price' not in driver.current_url:
-        # print('--->>> ', book_id, book_title, driver.current_url)
-        #  TODO Проверка на наличии сортировки по цене. Сбор всех цен и вывод минимальной в случае если сортировка не найдена?
-        # finds = [_cardData(cardOBJ)  for cardOBJ in cardsOBJs]
-        pass
-
     cardsOBJs = driver.find_elements( By.XPATH, "//div[@data-index]" )
+    if cardsOBJs == []:
+        return
+    
+    if 'sorting=price' not in driver.current_url:
+        # Сбор всех цен и вывод минимальной в случае если сортировка не найдена
+        finds = []
+        for cardOBJ in cardsOBJs:
+            d_find = _cardData(cardOBJ) 
+            if d_find is not None:
+                finds.append(d_find)
+        # finds = [_cardData(cardOBJ) for cardOBJ in cardsOBJs]
+        # finds = [find for find in finds if find is not None]
+        if finds == []:
+            return
+        
+        return utils.minPrice(finds)
+
     for cardOBJ in cardsOBJs:
         d_find = _cardData(cardOBJ) 
         if d_find is not None:
             return d_find
-        return 
 
 @pauseW
 def findOnProductPage(driver, book_id, book_title, type) -> dict:
@@ -66,14 +66,7 @@ def findOnProductPage(driver, book_id, book_title, type) -> dict:
     
     title = driver.find_element( By.XPATH, "//h1[contains(@class, 'tsHeadline550Medium')]" ).text
     if not utils.isTITLEinSTR(book_title, title):
-            # print('>>> ', title)
             return
-    # if '|' in title:
-    #     card['title'], card['author'] = title.split('|')
-    #     card['author'] = utils.normalizeStr(card['author'])
-    # else:
-    #     card['title'], card['author'] = title, None
-    # card['title'] = utils.normalizeStr(card['title'])
     
     card['article'] = driver.find_element( By.XPATH, "//div[contains(text(),'Артикул')]" ).text.replace('Артикул: ', '')
     prices = driver.find_elements( By.XPATH, "//div[@data-widget='webPrice']//span" )
@@ -108,7 +101,8 @@ def saveCookie(driver, file='./tmp/new.json'):
 def getSearhData(book: dict) -> list:
     """Получение списка словарей данных, 
     для поиска и обработки полученных данных.
-    Принимает словарь одной книги из database.getAllBooks().
+    Принимает словарь одной книги из database.getAllBooks():
+    {title, author, year_start, year_end, isbns, articles, options}
     Возвращает список словарей {book_id, title, URL, type}.
     Словарей на книгу может быть больше одного"""
     def _articleURL(_book) -> list:
@@ -182,38 +176,42 @@ def getAllData() -> list:
             allData.append(data)
     return allData
 
-def splitType(lst: list) -> list:
-    """Принимает список словарей, делит по id и типу"""
+def minPriceOnType(lst: list) -> list:
+    """Принимает список словарей, делит по id и типу.
+    Должны быть словари цен, а именно:
+    {'book_id': int,
+    'datetime': datetime,
+    'price': int,
+    'article': int,
+    'typeSearch': str}"""
     data = {}
+
     for item in lst:
+        # Добавляем в новый словарь с key 'id_тип', и value по умолчанию []
         data.setdefault(f'{item['book_id']}_{item['typeSearch']}', list())
+        # Значения заполняются списком словарей из исходного lst
         data[f'{item['book_id']}_{item['typeSearch']}'].append(item)
 
-
-    for k,v in data.items():
-        if len(v) > 1:
-            minPrice(v)
-
-def minPrice(lst: list):
-    prices = [item["price"] for item in lst]
-    print(min(prices))
-    for w in lst:
-        print(w)
+    res = []
+    # Отправленяем список словарей, где на один тип одного id более одного словаря в min функцию
+    # Результат функции и списки, где по одному словарю добавляем в возврощаемый список словарей
+    for value in data.values():
+        if len(value) > 1:
+            res.append(utils.minPrice(value))
+        elif len(value) == 1:
+            res.extend(value)
+    return res
 
 
 def main():
-    # TODO 
-    # минимальную цену в переборе по артикулам и исбн (если их больше одного)
-    # findOnSearchPage вместо всех / не обходить все, а вернуть первую, так как сортировка по цене?     sorting=price
-
     baseURL = "https://ozon.kz/"
     driver = getDriver(True)
     driver.get(baseURL)
-    # driver.implicitly_wait(10)
 
     res = []
-    # Переделать вывод, один результат на тип, +id +type
     for book in getAllData(): 
+        # if book.get('book_id') != 22:
+        #     continue
         print(book['title'])
         for item in book['URLs']:
             print(item)
@@ -225,7 +223,7 @@ def main():
             
             try:
                 if (item["type"] == "article") and ("product_id" in driver.current_url):
-                    pass # articleGone()
+                    pass # TODO ? articleGone()
                 elif (item["type"] == "article") and ("product" in driver.current_url):
                     find = findOnProductPage(driver, book['book_id'], book['title'], item['type'])
                 elif "category/knigi-16500" in driver.current_url:
@@ -237,7 +235,7 @@ def main():
             except Exception as ex:
                 print(ex)
                 
-    # тута можно убрать лишние результаты по книге
+    res = minPriceOnType(res)
                 
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
     
