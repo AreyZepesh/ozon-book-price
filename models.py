@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime as dt
 
 DEFAULT_DB = "ozon-book.db"
 
@@ -67,7 +67,7 @@ class Price(Base):
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id = mapped_column(Integer, ForeignKey('books.id', ondelete='CASCADE'), index=True)
-    datetime = mapped_column(DateTime, default=datetime.now)
+    datetime = mapped_column(Text, default=dt.now().strftime("%Y-%m-%d %H:%M"))
     price = mapped_column(Integer)
     article = mapped_column(Integer)
     typeSearch = mapped_column(Text)

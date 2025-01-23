@@ -4,12 +4,12 @@ from getDriver import getDriver
 
 import json
 from time import sleep
-from datetime import datetime
+from datetime import datetime as dt
 from selenium.webdriver.common.by import By
 
 PAUSE = True
 PRICEDCT = {'book_id': None, 'datetime': None, 'price': None, 'article': None, 'typeSearch': None}
-DATE_TIME = datetime.now().strftime("%Y-%m-%d %H:%M")
+DATE_TIME = dt.now().strftime("%Y-%m-%d %H:%M")
 
 def pauseW(fn):
     def wrapper(*args, **kwargs):
@@ -208,7 +208,7 @@ def main():
     driver = getDriver(True)
     driver.get(baseURL)
 
-    res = []
+    dataList = []
     for book in getAllData(): 
         # if book.get('book_id') != 22:
         #     continue
@@ -229,19 +229,24 @@ def main():
                 elif "category/knigi-16500" in driver.current_url:
                     find = findOnSearchPage(driver, book['book_id'], book['title'], item['type'])
 
-                if find is not None and find not in res:
-                    res.append(find)
+                if find is not None and find not in dataList:
+                    dataList.append(find)
 
             except Exception as ex:
                 print(ex)
                 
-    res = minPriceOnType(res)
-                
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
     
+    dataList = minPriceOnType(dataList)
+
+    # TODO внесение результатов в бд
+
     with open('./tmp/out.json', 'w', encoding='utf8') as file:
-        json.dump(res, file)
-    utils.dictToCSV(res, f'./tmp/out.csv')
+        json.dump(dataList, file)
+    utils.dictToCSV(dataList, f'./tmp/out.csv')
+
+    for data in dataList:
+        database.addPrice(data)
 
     sleep(2)
     driver.close()
