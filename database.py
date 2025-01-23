@@ -108,7 +108,7 @@ def addPrice(data: dict, echo=False) -> None:
         db.add(price)
         db.commit()
 
-def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, echo=False) -> list:
+def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, getTitle = False, echo=False) -> list:
     """Принимает ID книги, а так же даты/время С и ПО какой период нужен.
     Даты в формате datetime или '2025-12-13 12:59' 
     Без этих данных выдаст все записи в таблице.
@@ -124,12 +124,21 @@ def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, 
         if datetime_stop:
             result = result.filter(models.Price.datetime <= datetime_stop)
         result = result.all()
-    for row in result:
-        prices.append({'book_id': row.book_id,
-                       'datetime': row.datetime,
-                       'price': row.price,
-                       'article': row.article,
-                       'typeSearch': row.typeSearch})
+        if getTitle:
+            for row in result:
+                prices.append({'book_id': row.book_id,
+                        'book_title': row.book.title,
+                        'datetime': row.datetime,
+                        'price': row.price,
+                        'article': row.article,
+                        'typeSearch': row.typeSearch})
+    if not getTitle:
+        for row in result:
+            prices.append({'book_id': row.book_id,
+                    'datetime': row.datetime,
+                    'price': row.price,
+                    'article': row.article,
+                    'typeSearch': row.typeSearch})
     return prices
 
 
