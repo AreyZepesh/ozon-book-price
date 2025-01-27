@@ -1,8 +1,7 @@
-import database
 import utils
 from getDriver import getDriver
+from database import addPrice as addPriceToDB
 
-import json
 from time import sleep
 from datetime import datetime as dt
 from selenium.webdriver.common.by import By
@@ -84,6 +83,7 @@ def articleGone(driver) -> None:
     print("-->", driver.find_element( By.XPATH, "//h2[contains(text(),'Этот товар закончился')]" ).text)
     pass
 
+"""Куки
 @pauseW
 def addCookie(driver, file='./tmp/cookies.json'):
     # куки входа... как долго проживут?
@@ -97,110 +97,8 @@ def addCookie(driver, file='./tmp/cookies.json'):
 def saveCookie(driver, file='./tmp/new.json'):
     with open(file, 'w') as file:
         json.dump(driver.get_cookies(), file)
+"""
 
-def getSearhData(book: dict) -> list:
-    """Получение списка словарей данных, 
-    для поиска и обработки полученных данных.
-    Принимает словарь одной книги из database.getAllBooks():
-    {title, author, year_start, year_end, isbns, articles, options}
-    Возвращает список словарей {book_id, title, URL, type}.
-    Словарей на книгу может быть больше одного"""
-    def _articleURL(_book) -> list:
-        aURLs = []
-        if _book['articles']:
-            for art in _book['articles']:
-                URL = f"https://ozon.kz/product/{art}"
-                aURLs.append({'URL': URL, 'type': 'article'})
-        return aURLs
-
-    def _isbnURL(_book, _param) -> list:
-        iURLs = []
-        if _book['isbns']:
-            for isbn in _book['isbns']:
-                URL = f"https://ozon.kz/category/knigi-16500/?sorting=price{_param}&text={isbn}"
-                iURLs.append({'URL': URL, 'type': 'isbn'})
-        return iURLs
-
-    def _parametrs(_book) -> str:
-        """Генерируем дополнительные опции поиска для isbn и текста"""
-        _param = str()
-        if _book['year_start'] and _book['year_end']:
-            releaseyear = '&releaseyear=' + str(_book["year_start"]) + '.000;' + str(_book["year_end"]) + '.000' 
-            _param += releaseyear
-        elif _book['year_start']:
-            releaseyear ='&releaseyear=' + str(_book['year_start']) + '.000;' + str(_book['year_start']) + '.000'
-            _param += releaseyear
-        if _book['options']:
-            for opt in _book['options']:
-                if opt is not None:
-                    _param = _param + '&' + opt
-        return _param
-
-    URLs = []
- 
-    # Определяем ограничения поиска и убираем из списка опций
-    if book['options']:
-        if ('onlyArticle' in book['options']) and (book['articles'] is not None):
-            return _articleURL(book)
-        elif ('onlyArticle' in book['options']) and (book['articles'] is  None):
-            book['options'].pop(book['options'].index('onlyArticle'))
-
-        if ('onlyISBN' in book['options']) and (book['isbns'] is not None):
-            return _isbnURL(book, _parametrs(book))
-        elif ('onlyISBN' in book['options']) and (book['isbns'] is None):
-            book['options'].pop(book['options'].index('onlyISBN'))
-    
-    search_text = book['title']
-    if book['author']:
-        search_text = search_text + ' ' + book['author']
-    search_text = search_text.replace(' ', '+')
-
-    add_search_param = _parametrs(book)
-    URL = f"https://ozon.kz/category/knigi-16500/?sorting=price{add_search_param}&text={search_text}"
-    URLs.append({'URL': URL, 'type': 'text'})
-    URLs.extend( _isbnURL(book, add_search_param) )
-    URLs.extend( _articleURL(book) )
-
-    return URLs
-
-def getAllData() -> list:
-    """Данные для поиска, по всем книгам.
-    Возвращает список словарей 
-    {book_id, title, {URL, type}}.
-    Словарей на книгу может быть больше одного"""
-    allData = []
-    for book in database.getAllBooks():
-        data = {'book_id': book['id'], 'title': book['title'], 'URLs': []}
-        data['URLs'].extend( getSearhData(book) )
-        if data['URLs'] != []:
-            allData.append(data)
-    return allData
-
-def minPriceOnType(lst: list) -> list:
-    """Принимает список словарей, делит по id и типу.
-    Должны быть словари цен, а именно:
-    {'book_id': int,
-    'datetime': datetime,
-    'price': int,
-    'article': int,
-    'typeSearch': str}"""
-    data = {}
-
-    for item in lst:
-        # Добавляем в новый словарь с key 'id_тип', и value по умолчанию []
-        data.setdefault(f'{item['book_id']}_{item['typeSearch']}', list())
-        # Значения заполняются списком словарей из исходного lst
-        data[f'{item['book_id']}_{item['typeSearch']}'].append(item)
-
-    res = []
-    # Отправленяем список словарей, где на один тип одного id более одного словаря в min функцию
-    # Результат функции и списки, где по одному словарю добавляем в возврощаемый список словарей
-    for value in data.values():
-        if len(value) > 1:
-            res.append(utils.minPrice(value))
-        elif len(value) == 1:
-            res.extend(value)
-    return res
 
 
 def main():
@@ -209,7 +107,7 @@ def main():
     driver.get(baseURL)
 
     dataList = []
-    for book in getAllData(): 
+    for book in utils.getAllData(): 
         # if book.get('book_id') != 22:
         #     continue
         print(book['title'])
@@ -237,16 +135,14 @@ def main():
                 
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
     
-    dataList = minPriceOnType(dataList)
+    dataList = utils.minPriceByKeys(dataList)
 
     # TODO внесение результатов в бд
-
-    with open('./tmp/out.json', 'w', encoding='utf8') as file:
-        json.dump(dataList, file)
-    utils.dictToCSV(dataList, f'./tmp/out.csv')
+    utils.toJSON(dataList)
+    utils.dictToCSV(dataList)
 
     for data in dataList:
-        database.addPrice(data)
+        addPriceToDB(data)
 
     sleep(2)
     driver.close()
