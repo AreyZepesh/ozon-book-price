@@ -16,6 +16,7 @@ DEFAULT_DB = "ozon-book.db"
 """ Классы """
 # Base должен быть предком других моделей таблиц
 class Base(DeclarativeBase): #pass
+    __table_args__ = {'sqlite_autoincrement': True}
     def searchAttr(self):
         """Возвращает словарь, связанный с аттрибутом имеющего опцию QNIQEU: 
         {название: значение}"""
@@ -67,8 +68,8 @@ class Price(Base):
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     book_id = mapped_column(Integer, ForeignKey('books.id', ondelete='CASCADE'), index=True)
-    datetime = mapped_column(Text, default=dt.now().strftime("%Y-%m-%d %H:%M"))
-    price = mapped_column(Integer)
+    datetime = mapped_column(Text, default=dt.now().strftime("%Y-%m-%d %H:%M"), index=True)
+    price = mapped_column(Integer, index=True)
     article = mapped_column(Integer)
     typeSearch = mapped_column(Text)
 
