@@ -82,58 +82,6 @@ def csvToDict(csvPath) -> list:
     
     return data
 
-def createViewS(dbname: str) -> None:
-    """Создание представлений в БД, так как не смог решить вопрос средствами sqlalchemy.
-    Нужно только для удобной работы в БД посредство браузеров БД"""
-    import sqlite3
-    connect = sqlite3.connect(dbname)
-    cursor = connect.cursor()
-
-    try:
-        cursor.execute('BEGIN')
-
-        cursor.execute("""CREATE VIEW IF NOT EXISTS books_view AS
-                            SELECT books.id AS book_id, 
-                                title, author, year_start, year_end, options,
-                                COUNT(DISTINCT isbns.isbn) AS have_isbn,
-                                COUNT(DISTINCT articles.article) AS have_article
-                            FROM books
-                                LEFT JOIN isbns ON books.id = isbns.book_id
-                                LEFT JOIN articles ON bookS.id = articles.book_id
-                            GROUP BY books.id
-                        """)
-        cursor.execute("""CREATE VIEW IF NOT EXISTS articles_view AS
-                            SELECT books.id AS book_id,
-                                title, author,
-                                articles.article AS article
-                            FROM books
-                                INNER JOIN articles ON books.id = articles.book_id;
-                        """)
-        cursor.execute("""CREATE VIEW IF NOT EXISTS isbns_view AS
-                            SELECT books.id AS book_id,
-                                title, author,
-                                isbns.isbn AS isbn
-                            FROM books
-                                INNER JOIN isbns ON books.id = isbns.book_id;
-                        """)
-        cursor.execute("""CREATE VIEW price_view AS
-                            SELECT books.id AS book_id,
-                                books.title AS Title,
-                                datetime, price, article, typeSearch
-                            FROM prices
-                                LEFT JOIN books ON prices.book_id = books.id
-                       """)
-        
-        cursor.execute('COMMIT')
-
-    except Exception as ex:
-        cursor.execute('ROLLBACK')
-        raise ex
-
-    finally:
-        connect.commit()
-        connect.close()
-
 def strFromComparison(string: str) -> str:
     """Убирает из строки все кроме букв, цифр и пробелов.
     Так же нормализует"""

@@ -1,9 +1,9 @@
-from utils import createViewS
-from typing import Any
+# from utils import createViewS
+# from typing import Any
 from sqlalchemy import create_engine
 from sqlalchemy import Integer
 from sqlalchemy import Text
-from sqlalchemy import DateTime
+# from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import mapped_column
@@ -83,6 +83,52 @@ def getEngine(dbname = DEFAULT_DB, echo=False):
     engine = create_engine(sqlite_db, echo=echo)
     return engine
 
+def createViewS(dbname: str) -> None:
+    """Создание представлений в БД"""
+    from sqlalchemy import text
+    with Session(autoflush=False, bind=getEngine(dbname=dbname)) as db:
+        db.execute(text("""CREATE VIEW IF NOT EXISTS books_view AS
+                            SELECT books.id AS book_id, 
+                                title, author, year_start, year_end, options,
+                                COUNT(DISTINCT isbns.isbn) AS have_isbn,
+                                COUNT(DISTINCT articles.article) AS have_article
+                            FROM books
+                                LEFT JOIN isbns ON books.id = isbns.book_id
+                                LEFT JOIN articles ON bookS.id = articles.book_id
+                            GROUP BY books.id
+                        """))
+        db.execute(text("""CREATE VIEW IF NOT EXISTS articles_view AS
+                            SELECT books.id AS book_id,
+                                title, author,
+                                articles.article AS article
+                            FROM books
+                                INNER JOIN articles ON books.id = articles.book_id;
+                        """))
+        db.execute(text("""CREATE VIEW IF NOT EXISTS isbns_view AS
+                            SELECT books.id AS book_id,
+                                title, author,
+                                isbns.isbn AS isbn
+                            FROM books
+                                INNER JOIN isbns ON books.id = isbns.book_id;
+                        """))
+        db.execute(text("""CREATE VIEW IF NOT EXISTS price_view AS
+                            SELECT books.id AS book_id,
+                                books.title AS Title,
+                                datetime, price, article, typeSearch
+                            FROM prices
+                                LEFT JOIN books ON prices.book_id = books.id
+                       """))
+        db.execute(text("""CREATE VIEW IF NOT EXISTS prices_view_min_avg AS
+                            SELECT books.id AS book_id,
+                                books.title AS Title,
+                                MIN(price) AS min_price,
+                                AVG(price) AS avg_price
+                            FROM prices
+                                LEFT JOIN
+                                books ON prices.book_id = books.id
+                            GROUP BY book_id
+                       """))
+
 def CreateDB(dbname = DEFAULT_DB, recreate=False, echo=False):
     if recreate: 
         import os
@@ -92,7 +138,7 @@ def CreateDB(dbname = DEFAULT_DB, recreate=False, echo=False):
     engine = getEngine(dbname=dbname, echo=echo)
     Base.metadata.create_all(bind=engine)
     engine.dispose()
-    createViewS(DEFAULT_DB)
+    createViewS(dbname)
 
 def inSession(fn):
     """Декаратор, написал, но не использовал"""
@@ -102,7 +148,7 @@ def inSession(fn):
     return wrapper
 
 def main():
-    # CreateDB(recreate=True)
+    # CreateDB(dbname='test.db', recreate=True)
     pass
 
 if __name__  == '__main__':

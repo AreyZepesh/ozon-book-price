@@ -147,7 +147,25 @@ def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, 
 
 
 def main():
-    # csvToDB("./csv/test.csv",echo=0)
+    # # csvToDB("./csv/test.csv",echo=0)
+    # from sqlalchemy import select, text
+    # from sqlalchemy import func
+    # with Session(autoflush=False, bind=models.getEngine(echo=1)) as db:
+    #     # sel = select(models.Price).where(models.Price.book_id == 10, models.Price.price == text("(SELECT MIN(price) FROM prices WHERE book_id = 10)"))
+    #     # sel = text('SELECT MIN(price), AVG(price) FROM prices WHERE book_id = 10')
+    #     sel = text("SELECT * FROM prices_view_min_avg")
+    #     # sel2 = text('SELECT * FROM prices WHERE book_id = 10 AND datetime = (SELECT MAX(datetime) FROM prices WHERE book_id = 10)' )
+    #     # sel3 = text('SELECT * FROM prices WHERE book_id = 10 AND price = (SELECT MIN(price) FROM prices WHERE book_id = 10)' )
+
+    #     res = db.execute(sel)
+    #     # res = db.scalars(sel)
+    #     res = res.all()
+    #     # res = res.first()
+
+    #     print(res)
+    #     for r in res:
+    #         print(r)
+    #         # print(r.price)
     pass
 
 if __name__  == '__main__':
