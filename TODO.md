@@ -1,5 +1,11 @@
 
 логин в озон? через арендные номера
+https://www.ozon.ru/ozonid
+номер
+<input autocomplete="off" type="tel" name="autocomplete" maxlength="" autofocus="autofocus" class="d019-a d019-a3 ca7j_47">
+почта
+
+
 
 тг бот
 

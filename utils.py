@@ -23,6 +23,7 @@ def normalizeStr(string: str) -> str:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
     string = string.replace('\t',' ')
+    string = string.replace('\r\n',' ')
     string = string.replace('\n',' ')
     string = string.replace('\u2009',' ')
     string = string.replace(' ', ' ') 
@@ -321,8 +322,55 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
         if save:
             plt.savefig(f"{makeDir('./graphics')}/{items[0].get('book_id')}.png")
 
+def getEnv():
+    """Возвращает словарь, с переменными из файла .env"""
+    from dotenv import dotenv_values
+
+    return dotenv_values('.env')
+    # import os
+    # from dotenv import load_dotenv
+    # load_dotenv()
+    # EMAIL_LOGIN = os.getenv("EMAIL_LOGIN")
+    # EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+def getEmail() -> list:
+    """Запрос писем с почты, возвращает все"""
+    import imaplib, email
+    secret = getEnv()
+    mails = []
+    with imaplib.IMAP4_SSL("imap.yandex.kz", port=993) as imap:
+        imap.login(secret['EMAIL_LOGIN'], secret['EMAIL_PASSWORD'])
+        imap.select("INBOX")
+        data = imap.search(None, 'ALL')[1]
+        data = data[0].split()
+
+        for item in data:
+            f_data = imap.fetch(item, "(RFC822)")[1]
+            email_message = email.message_from_bytes(f_data[0][1])
+            body = [f"{
+                email.utils.parsedate_to_datetime(email_message['Date']).astimezone().replace(tzinfo=None)
+                }"]
+            if email_message.is_multipart():
+                for payload in email_message.get_payload():
+                    body.append(payload.get_payload(decode=True).decode('utf-8'))
+            else:    
+                body.append(email_message.get_payload(decode=True).decode('utf-8'))
+            mails.append(body)
+    return mails
+
+    def getCodeFromEmail():
+        pass
+
 def main():
-    plotPriceByBook()
+    # plotPriceByBook()
+    # with open('./tmp/mail.html', 'w', encoding='utf8') as file:
+    #     file.write(body)
+    # for y in getEmail():
+    #     for x in y:
+    #         print(x)
+    #         if '<!DOCTYPE html' in x:
+    #             with open('./tmp/mail1.html', 'w', encoding='utf8') as file:
+    #                 file.write(x)
     pass
 
 if __name__  == '__main__':
