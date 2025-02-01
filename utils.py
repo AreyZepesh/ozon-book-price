@@ -334,8 +334,13 @@ def getEnv():
     # EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 def getEmail() -> list:
-    """Запрос писем с почты, возвращает все"""
+    """Запрос писем с почты, возвращает все, от определенных отправителей.
+    Возвращает список списков, начиная с самого нового, к самому старому.
+    Во вложенном списке первый [0] элемент - дата и время письма, объект datetime.
+    Последующие элементы - части тела письма, от одного."""
+    # TODO фильтр: отправитель - озон или телефон
     import imaplib, email
+    acceptFrom = ('ozzionni@gmail.com', 'mailer@sender.ozon.ru')
     secret = getEnv()
     mails = []
     with imaplib.IMAP4_SSL("imap.yandex.kz", port=993) as imap:
@@ -347,30 +352,49 @@ def getEmail() -> list:
         for item in data:
             f_data = imap.fetch(item, "(RFC822)")[1]
             email_message = email.message_from_bytes(f_data[0][1])
-            body = [f"{
+            emFrom = email.utils.parseaddr(email_message['From'])[1]
+            if emFrom not in acceptFrom:
+                continue
+            body = [
                 email.utils.parsedate_to_datetime(email_message['Date']).astimezone().replace(tzinfo=None)
-                }"]
+                ]
             if email_message.is_multipart():
                 for payload in email_message.get_payload():
                     body.append(payload.get_payload(decode=True).decode('utf-8'))
             else:    
                 body.append(email_message.get_payload(decode=True).decode('utf-8'))
             mails.append(body)
-    return mails
+    return reversed(mails)
 
-    def getCodeFromEmail():
-        pass
+def getCodeFromEmail(timeH=0.5) -> str:
+    """Возвращает код для озона из писем, за период времени, не более timeH.
+    timeH - возраст письма не должен превышать этого значения, в часах"""
+    def _getCodeFromHTML(body: str) -> str:
+        """Поиск кода в письме html версткой"""
+        import bs4
+        soup = bs4.BeautifulSoup(body, 'html.parser')
+        res = soup.find('td', string=re.compile('([0-9]{6})'))
+        if res is not None:
+            return normalizeStr(res.text)
+
+    import re
+    from datetime import timedelta, datetime
+    dtnow = datetime.now()
+
+    for mail in getEmail():
+        if dtnow - mail[0] > timedelta(hours=timeH):
+            continue
+        # print(mail[0])
+        for row in mail[1:]:
+            if '<!DOCTYPE html' in row:
+                return  _getCodeFromHTML(row)
+            else:
+                return re.search( '[0-9]{6}', normalizeStr(row) ).group()
+
+    pass
 
 def main():
-    # plotPriceByBook()
-    # with open('./tmp/mail.html', 'w', encoding='utf8') as file:
-    #     file.write(body)
-    # for y in getEmail():
-    #     for x in y:
-    #         print(x)
-    #         if '<!DOCTYPE html' in x:
-    #             with open('./tmp/mail1.html', 'w', encoding='utf8') as file:
-    #                 file.write(x)
+    # print(getCodeFromEmail(timeH=100))
     pass
 
 if __name__  == '__main__':
