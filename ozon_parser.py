@@ -83,6 +83,31 @@ def articleGone(driver) -> None:
     print("-->", driver.find_element( By.XPATH, "//h2[contains(text(),'Этот товар закончился')]" ).text)
     pass
 
+def authToOzon(driver) -> None:
+    driver.get('https://www.ozon.ru/ozonid')
+    sleep(5)
+    secret = utils.getEnv()
+    secret = secret['OZON_NUMBER']
+
+    numArea = driver.find_element(By.XPATH, '//input[@type="tel"]')
+    numArea.send_keys(secret)
+
+
+    submitButton = driver.find_element(By.XPATH, '//button[@type="submit"]')
+    submitButton.click()
+
+    codeArea = driver.find_element(By.XPATH, '//input[@type="number"]')
+    sleep(30)
+    code = None
+    for x in range(5):
+        code = utils.getCodeFromEmail()
+        if code is None:
+            sleep(30)
+        else:
+            break
+    codeArea.send_keys(code)
+    sleep(5)
+
 """Куки
 @pauseW
 def addCookie(driver, file='./tmp/cookies.json'):
@@ -105,6 +130,20 @@ def main():
     baseURL = "https://ozon.kz/"
     driver = getDriver(True)
     driver.get(baseURL)
+    
+    try:
+        auth_msg = 'Начало попытки аутентификации'
+        authToOzon(driver)
+        try:
+            driver.find_element(By.XPATH, "//span[contains(text(), 'Кабинет')]")
+            auth_msg = "Парсим под логином"
+        except:
+            auth_msg = "Парсим без логина"
+    except:
+        auth_msg = "Аутентификация не удалась"
+    finally:
+        print('>>>   ', auth_msg, '   <<<')
+        print()
 
     dataList = []
     for book in utils.getAllData(): 
@@ -145,8 +184,8 @@ def main():
         addPriceToDB(data)
 
     sleep(2)
-    driver.close()
-    # driver.quit()
+    # driver.close()
+    driver.quit()
 
 
     pass
