@@ -86,8 +86,7 @@ def articleGone(driver) -> None:
 def authToOzon(driver) -> None:
     driver.get('https://www.ozon.ru/ozonid')
     sleep(5)
-    secret = utils.getEnv()
-    secret = secret['OZON_NUMBER']
+    secret = utils.getEnv('OZON_NUMBER')
 
     numArea = driver.find_element(By.XPATH, '//input[@type="tel"]')
     numArea.send_keys(secret)

@@ -1,11 +1,7 @@
-
-логин в озон? через арендные номера
-https://www.ozon.ru/ozonid
-номер
-<input autocomplete="off" type="tel" name="autocomplete" maxlength="" autofocus="autofocus" class="d019-a d019-a3 ca7j_47">
-почта
+получения артикля последней цены... минимальной?
 
 
+удаление книги
 
 тг бот
 
@@ -25,6 +21,9 @@ flush при добавлении книг в дб
 
 обновить методы алхимии? select.where.scalars вместо query.filter
 
+Ошибка после обновления:
+from session not created: This version of ChromeDriver only supports Chrome version 
+Current browser version is
 
 КОММЕНТ:
 строка поиска книжек https://ozon.kz/category/knigi-16500/?sorting=price&text=

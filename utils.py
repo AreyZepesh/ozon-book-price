@@ -313,6 +313,13 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
         plt.plot(dts['text'], prices['text'], 'r--*')
         plt.plot(dts['isbn'], prices['isbn'], 'g-..')
         plt.plot(dts['article'], prices['article'], 'b-.^')
+        if dts['isbn'] != []:
+            plt.text(dts['isbn'][-1], prices['isbn'][-1], f'{prices['isbn'][-1]}  ', c='g', va = 'top', ha = 'right', backgroundcolor=('w',0.25))
+        if dts['article'] != []:
+            plt.text(dts['article'][-1], prices['article'][-1], f'{prices['article'][-1]}  ', c='b', va='bottom', ha = 'right', backgroundcolor=('w',0.25))
+        if dts['text'] != []:
+            plt.text(dts['text'][-1], prices['text'][-1], f' {prices['text'][-1]}  ', c='r', va='bottom', ha='left', backgroundcolor=('w',0.25))
+
         plt.xticks(rotation=45)
         plt.grid(True)
         plt.legend(['text', 'isbn', 'article'])
@@ -322,16 +329,14 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
         if save:
             plt.savefig(f"{makeDir('./graphics')}/{items[0].get('book_id')}.png")
 
-def getEnv():
-    """Возвращает словарь, с переменными из файла .env"""
+def getEnv(key=None):
+    """Без ключа: Возвращает словарь, с переменными из файла .env.
+    С ключем: Возвращает значение переменной с именем равном ключу"""
     from dotenv import dotenv_values
 
+    if key:
+        return dotenv_values('.env').get(key)
     return dotenv_values('.env')
-    # import os
-    # from dotenv import load_dotenv
-    # load_dotenv()
-    # EMAIL_LOGIN = os.getenv("EMAIL_LOGIN")
-    # EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 def getEmail() -> list:
     """Запрос писем с почты, возвращает все, от определенных отправителей.
@@ -341,10 +346,11 @@ def getEmail() -> list:
     # TODO фильтр: отправитель - озон или телефон
     import imaplib, email
     acceptFrom = ('ozzionni@gmail.com', 'mailer@sender.ozon.ru')
-    secret = getEnv()
+    email_login = getEnv('EMAIL_LOGIN')
+    email_password = getEnv('EMAIL_PASSWORD')
     mails = []
     with imaplib.IMAP4_SSL("imap.yandex.kz", port=993) as imap:
-        imap.login(secret['EMAIL_LOGIN'], secret['EMAIL_PASSWORD'])
+        imap.login(email_login, email_password)
         imap.select("INBOX")
         data = imap.search(None, 'ALL')[1]
         data = data[0].split()
