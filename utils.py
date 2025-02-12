@@ -48,7 +48,7 @@ def getSampleBookCSV(csvPath: str ='./tmp/sample.csv') -> None:
         writer = csv.writer(file, delimiter=';')
         writer.writerow(['title','author','year_start','year_end','isbns','articles','options'])
 
-def dictToCSV(data: list, csvPath: str = "./tmp/output.csv") -> None:
+def dictToCSV(data: list[dict], csvPath: str = "./tmp/output.csv") -> None:
     """Принимает список словарей, сохраняет в CSV"""
     import csv
 
@@ -62,7 +62,7 @@ def dictToCSV(data: list, csvPath: str = "./tmp/output.csv") -> None:
         writer.writeheader()
         writer.writerows(data)
 
-def csvToDict(csvPath) -> list:
+def csvToDict(csvPath) -> list[dict]:
     """Возвращает список словарей, сгенерированных на основе csv файла"""
     import csv
     import os
@@ -113,7 +113,7 @@ def isTITLEinSTR(title: str, string: str) -> bool:
         return True
     return False
 
-def dictByKeys (lst: list, firstKey: str, secondKey: str = None) -> dict:
+def dictByKeys (lst: list[dict], firstKey: str, secondKey: str = None) -> dict:
     """Принимает список словарей, делит по первому и (если указано) второму ключам.
     Возвращает словарь с ключами  вида 'dict[firstKey]_dict[secondKey]' и значениями в виде 
     списков словарей, содержащими комбинацию значений этих ключей"""
@@ -133,7 +133,7 @@ def dictByKeys (lst: list, firstKey: str, secondKey: str = None) -> dict:
         data[name].append(item)
     return data
 
-def minPriceByKeys(lst: list, firstKey='book_id', secondKey='typeSearch') -> list:
+def minPriceByKeys(lst: list[dict], firstKey='book_id', secondKey='typeSearch') -> list[dict]:
     """Принимает список словарей, делит по первому и второму ключу.
     По умолчанию ключи для словарей цен, а именно :'book_id' и 'typeSearch'.
     В словарях ОБЯЗАТЕЛЬНО должен быть ключ 'price'.
@@ -152,7 +152,7 @@ def minPriceByKeys(lst: list, firstKey='book_id', secondKey='typeSearch') -> lis
             res.extend(value)
     return res
 
-def minPrice(lst: list) -> dict:
+def minPrice(lst: list[dict]) -> dict:
     """Принимает список словарей. 
     Возвращает один словарь с минимальной ценой.
     Должны быть словари, содержащий как минимум:
@@ -165,7 +165,7 @@ def minPrice(lst: list) -> dict:
         if item.get('price', None) == minPrice:
             return item
 
-def getSearhData(book: dict) -> list:
+def getSearhData(book: dict) -> list[dict]:
     """Получение списка словарей данных, 
     для поиска и обработки полученных данных.
     Принимает словарь одной книги из database.getAllBooks():
@@ -230,7 +230,7 @@ def getSearhData(book: dict) -> list:
 
     return URLs
 
-def getAllData() -> list:
+def getAllData() -> list[dict]:
     """Данные для поиска, по всем книгам.
     Возвращает список словарей 
     {book_id, title, {URL, type}}.
@@ -267,7 +267,7 @@ def makeDir(dirPath: str) -> str:
         os.makedirs(dirPath)
     return dirPath
 
-def plotAllPrices(datetime_start=None, datetime_stop=None, show=False, save=True):
+def plotAllPrices(datetime_start=None, datetime_stop=None, show=False, save=True) -> None:
     """Выводит Х - даты, У - все минимальные цены по этой дате.
     Можно указать период"""
     import database, utils
@@ -294,7 +294,7 @@ def plotAllPrices(datetime_start=None, datetime_stop=None, show=False, save=True
         plt.savefig(f"{makeDir('./graphics')}/allbooks.png")
     pass
 
-def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=False, save=True):
+def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=False, save=True) -> None:
     """Выводит Х - даты, У - все цены по типу на книгу по этой дате.
     Можно указать период"""
     import database, utils
@@ -329,7 +329,7 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
         if save:
             plt.savefig(f"{makeDir('./graphics')}/{items[0].get('book_id')}.png")
 
-def getEnv(key=None):
+def getEnv(key=None) -> str|dict:
     """Без ключа: Возвращает словарь, с переменными из файла .env.
     С ключем: Возвращает значение переменной с именем равном ключу"""
     from dotenv import dotenv_values
@@ -338,7 +338,7 @@ def getEnv(key=None):
         return dotenv_values('.env').get(key)
     return dotenv_values('.env')
 
-def getEmail() -> list:
+def getEmail() -> list[list]:
     """Запрос писем с почты, возвращает все, от определенных отправителей.
     Возвращает список списков, начиная с самого нового, к самому старому.
     Во вложенном списке первый [0] элемент - дата и время письма, объект datetime.
@@ -400,7 +400,6 @@ def getCodeFromEmail(timeH=0.5) -> str:
     pass
 
 def main():
-    # print(getCodeFromEmail(timeH=100))
     pass
 
 if __name__  == '__main__':

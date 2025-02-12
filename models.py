@@ -145,7 +145,7 @@ def inSession(fn):
     """Декаратор, написал, но не использовал"""
     def wrapper(*args, **kwargs):
         with Session(autoflush=False, bind=getEngine(echo=False)) as db:
-            fn(*args, db=db, **kwargs)
+            return fn(*args, db=db, **kwargs)
     return wrapper
 
 def main():

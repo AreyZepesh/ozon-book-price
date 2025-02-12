@@ -38,7 +38,11 @@ def getId(obj, echo=False) -> int|None:
         return foo.id
     else:
         return None
-            
+
+@models.inSession
+def getBookTitle(book_id: int, db=None) -> str:
+    return db.get(models.Book, book_id).title
+
 def addBookToDB(book: dict, echo=False) -> int:
     """Добавить книгу в дб, вернуть ID.
     Получает словарь книги, ключи: 
@@ -50,10 +54,10 @@ def addBookToDB(book: dict, echo=False) -> int:
         db.refresh(book)
     return book.id
 
-def updateBook(id: int, book: dict, db=None, echo=False) -> None:
+def updateBook(book_id: int, book: dict, db=None, echo=False) -> None:
     """Обновить книгу по id"""
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
-        db.query(models.Book).filter(models.Book.id==id).update(book)
+        db.query(models.Book).filter(models.Book.id==book_id).update(book)
         db.commit()
 
 def addISBN(isbns: list, book_id: int, echo=False) -> None:
@@ -72,7 +76,7 @@ def addArticle(articles: list, book_id: int, echo=False) -> None:
                 db.add(models.Article(book_id=book_id, article=a))
         db.commit()
 
-def getAllBooks(short = False, echo=False) -> list:
+def getAllBooks(short = False, echo=False) -> list[dict]:
     """Возвращает список словарей книг и их данными, isbn и артиклями/
     Если указать short - вернет только ID и название"""
     books = []
@@ -109,7 +113,7 @@ def addPrice(data: dict, echo=False) -> None:
         db.add(price)
         db.commit()
 
-def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, getTitle = False, echo=False) -> list:
+def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, getTitle = False, echo=False) -> list[dict]:
     """Принимает ID книги, а так же даты/время С и ПО какой период нужен.
     Даты в формате datetime или '2025-12-13 12:59' 
     Без этих данных выдаст все записи в таблице.
@@ -142,11 +146,11 @@ def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, 
                     'typeSearch': row.typeSearch})
     return prices
 
-def getPriceStat(echo=False) -> list:
+def getPriceStat(echo=False) -> list[dict]:
     """Выводит статистику по книгам: последняя цена и дата, минимальняя и средняя цены. 
     Возвращает список словарей"""
     data = []
-    keys = ['book_id', 'book_title', 'last_data', 'last_price', 'min_price', 'avg_price']
+    keys = ['book_id', 'book_title', 'last_date', 'last_price', 'min_price', 'avg_price']
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
         for row in db.execute(text("SELECT * FROM prices_view_min_avg")).all():
             lst = list(row)
@@ -158,8 +162,11 @@ def getPriceStat(echo=False) -> list:
             data.append({k:v for k,v in zip(keys, lst)})
     return data
 
-
-
+@models.inSession
+def delBook(book_id: int, db=None) -> None:
+    book = db.get(models.Book, book_id)
+    db.delete(book)
+    db.commit()
 
 def main():
     pass

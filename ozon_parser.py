@@ -173,14 +173,14 @@ def main():
                 
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
     
-    dataList = utils.minPriceByKeys(dataList)
+    if len(dataList) > 0:
+        dataList = utils.minPriceByKeys(dataList)
 
-    # TODO внесение результатов в бд
-    utils.toJSON(dataList)
-    utils.dictToCSV(dataList)
+        utils.toJSON(dataList)
+        utils.dictToCSV(dataList)
 
-    for data in dataList:
-        addPriceToDB(data)
+        for data in dataList:
+            addPriceToDB(data)
 
     sleep(2)
     # driver.close()
