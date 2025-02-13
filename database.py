@@ -150,14 +150,19 @@ def getPriceStat(echo=False) -> list[dict]:
     """Выводит статистику по книгам: последняя цена и дата, минимальняя и средняя цены. 
     Возвращает список словарей"""
     data = []
-    keys = ['book_id', 'book_title', 'last_date', 'last_price', 'min_price', 'avg_price']
+    keys = ['book_id', 'book_title', 'last_date', 'last_price', 'prev_date', 'prev_prise', 'min_price', 'avg_price']
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
+        last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices")).first()[0]
         for row in db.execute(text("SELECT * FROM prices_view_min_avg")).all():
             lst = list(row)
-            last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices WHERE book_id = {lst[0]}")).first()[0]
+            # last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices WHERE book_id = {lst[0]}")).first()[0]
             last_prise = db.execute(text(f"SELECT MIN(price) FROM prices WHERE book_id = {lst[0]} AND datetime = '{last_date}'")).first()[0]
+            prev_date = db.execute(text(f"SELECT MAX(datetime) FROM prices WHERE book_id = {lst[0]} AND datetime < '{last_date}'")).first()[0]
+            prev_prise = db.execute(text(f"SELECT MIN(price) FROM prices WHERE book_id = {lst[0]} AND datetime = '{prev_date}'")).first()[0]
             lst.insert(2, last_date)
             lst.insert(3, last_prise)
+            lst.insert(4, prev_date)
+            lst.insert(5, prev_prise)
             lst[-1] = round(lst[-1])
             data.append({k:v for k,v in zip(keys, lst)})
     return data
