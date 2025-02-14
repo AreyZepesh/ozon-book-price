@@ -113,22 +113,34 @@ def addPrice(data: dict, echo=False) -> None:
         db.add(price)
         db.commit()
 
-def getPrices(book_id: int = None, datetime_start = None, datetime_stop = None, getTitle = False, echo=False) -> list[dict]:
+def getPrices(book_id: int = None, lastdays: int = None, datetime_start = None, datetime_stop = None, getTitle = False, echo=False) -> list[dict]:
     """Принимает ID книги, а так же даты/время С и ПО какой период нужен.
+    Параметр lastdays - вернуть за кол-во дней от последнего парсинга.
+    Параметрт lastdays отключает datetime_start/datetime_stop
     Даты в формате datetime или '2025-12-13 12:59' 
     Без этих данных выдаст все записи в таблице.
     Возвращает список словарей"""
+    def _fromdate(last_datetime, lastdays): 
+        from datetime import datetime, timedelta
+        last_date = datetime.strptime(last_datetime, "%Y-%m-%d %H:%M").date()
+        fromdate = last_date - timedelta(hours=lastdays)
+        return fromdate
     prices = []
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
         # if book_id:
         result = db.query(models.Price)
         if book_id:
             result = result.filter(models.Price.book_id == book_id)
-        if datetime_start:
-            result = result.filter(models.Price.datetime >= datetime_start)
-        if datetime_stop:
-            result = result.filter(models.Price.datetime <= datetime_stop)
+        if lastdays:
+            last_datetime  = db.execute(text(f"SELECT MAX(datetime) FROM prices")).first()[0]
+            result = result.filter(models.Price.datetime >= _fromdate(last_datetime, lastdays))
+        else:
+            if datetime_start:
+                result = result.filter(models.Price.datetime >= datetime_start)
+            if datetime_stop:
+                result = result.filter(models.Price.datetime <= datetime_stop)
         result = result.all()
+
         if getTitle:
             for row in result:
                 prices.append({'book_id': row.book_id,

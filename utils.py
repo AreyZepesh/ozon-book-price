@@ -199,7 +199,7 @@ def getSearhData(book: dict) -> list[dict]:
             _param += releaseyear
         if _book['options']:
             for opt in _book['options']:
-                if opt is not None:
+                if opt is not None and '=' in opt:
                     _param = _param + '&' + opt
         return _param
 
@@ -302,7 +302,7 @@ def plotAllPrices(datetime_start=None, datetime_stop=None, show=False, save=True
     if show:
         plt.show()
     if save:
-        pass
+        plt.savefig(f"{makeDir('./graphics')}/allbooks.png")
     pass
 
 def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=False, save=True) -> None:
@@ -327,12 +327,12 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
         plt.plot(dts['isbn'], prices['isbn'], 'g-..')
         plt.plot(dts['article'], prices['article'], 'b-.^')
 
-        # if dts['isbn'] != []:
-        #     plt.text(dts['isbn'][-1], prices['isbn'][-1], f'{prices['isbn'][-1]}  ', c='g', va = 'top', ha = 'right', backgroundcolor=('w',0.25))
-        # if dts['article'] != []:
-        #     plt.text(dts['article'][-1], prices['article'][-1], f'{prices['article'][-1]}  ', c='b', va='bottom', ha = 'right', backgroundcolor=('w',0.25))
-        # if dts['text'] != []:
-        #     plt.text(dts['text'][-1], prices['text'][-1], f' {prices['text'][-1]}  ', c='r', va='bottom', ha='left', backgroundcolor=('w',0.25))
+        if dts['isbn'] != []:
+            plt.text(dts['isbn'][-1], prices['isbn'][-1], f'{prices['isbn'][-1]}  ', c='g', va = 'top', ha = 'right', backgroundcolor=('w',0.25))
+        if dts['article'] != []:
+            plt.text(dts['article'][-1], prices['article'][-1], f'{prices['article'][-1]}  ', c='b', va='bottom', ha = 'right', backgroundcolor=('w',0.25))
+        if dts['text'] != []:
+            plt.text(dts['text'][-1], prices['text'][-1], f' {prices['text'][-1]}  ', c='r', va='bottom', ha='left', backgroundcolor=('w',0.25))
 
         min_dt = min(dts['text'] + dts['isbn'] + dts['article'])-timedelta(hours=2)
         max_dt = max(dts['text'] + dts['isbn'] + dts['article'])+timedelta(hours=2)
