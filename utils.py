@@ -329,7 +329,6 @@ def getCodeFromEmail(timeH=0.5) -> str:
     for mail in getEmail():
         if dtnow - mail[0] > timedelta(hours=timeH):
             continue
-        # print(mail[0])
         for row in mail[1:]:
             if '<!DOCTYPE html' in row:
                 return  _getCodeFromHTML(row)

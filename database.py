@@ -76,6 +76,19 @@ def addArticle(articles: list, book_id: int, echo=False) -> None:
                 db.add(models.Article(book_id=book_id, article=a))
         db.commit()
 
+'''@models.inSession
+def _getAllBooks( db=None) -> list[models.Book[models.ISBN|models.Article]]:
+    """Пример возвразающий объекты. ISBNs и артикли возващаются списком объектов"""
+    books = []
+    all_book_obj = db.query(models.Book).all()
+    for book_obj in all_book_obj:
+        book_obj.isbns
+        book_obj.articles
+        books.append(book_obj)
+    return books
+# for d in _getAllBooks():
+#     print(d.articles)'''
+
 def getAllBooks(short = False, echo=False) -> list[dict]:
     """Возвращает список словарей книг и их данными, isbn и артиклями/
     Если указать short - вернет только ID и название"""
@@ -193,10 +206,8 @@ def getLastPrices(book_id: int = None, db=None) -> list[dict]:
         wh = f'WHERE book_id = {book_id}'
     last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices {wh}")).first()[0]
     slct = slct.where(models.Price.datetime == last_date)
-    print(slct)
     data = db.scalars(slct).all()
     return [d.getDict() for d in data]
-
 
 @models.inSession
 def delBook(book_id: int, db=None) -> None:

@@ -28,6 +28,17 @@ class Base(DeclarativeBase): #pass
         del dct['_sa_instance_state']
         if dct.get('book_id'):
             del dct['id']
+        if dct.get('options'):
+            from utils import strToLst
+            dct['options'] = strToLst(dct.get('options'))
+        isbns = dct.get('isbns')
+        if isbns and isbns != []:
+            dct['isbns'] = [i.isbn for i in isbns]
+            # dct['isbns'] = [i.isbn for i in isbns if isinstance(i, ISBN)]
+        articles = dct.get('articles')
+        if articles and articles != []:
+            dct['articles'] = [a.article for a in articles]
+            # dct['articles'] = [a.article for a in articles if isinstance(a, Article)]
         return dct
 
 class Book(Base):

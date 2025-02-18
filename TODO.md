@@ -1,5 +1,4 @@
-получения артикля последней цены... минимальной?
-
+прифигачить постоянный хромдрайвер?
 
 тг бот
 
@@ -15,15 +14,17 @@
 
 flush при добавлении книг в дб
 
-переход со словарей на объекты из модели?
+переход со словарей на объекты из модели? (пример database._getAllBooks())
+выглядит перспективно, написал функцию в модели, которая выдает словарь по объекту, ровно как генерируемые вручную... разница так то не большая, но прикольно
 
-обновить методы алхимии? select.where.scalars вместо query.filter
+обновить методы алхимии? select.where.scalars вместо query.filter (database.getLastPrices() - пример)
 
 
 Ошибка после обновления:
 from session not created: This version of ChromeDriver only supports Chrome version 
 Current browser version is
-и родственная, из под батника
+
+и родственная, из под батника, работе не мешает
 could not detect version_main.therefore, we are assuming it is chrome 108 or higher
 
 КОММЕНТ:
