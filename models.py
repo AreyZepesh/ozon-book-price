@@ -17,10 +17,18 @@ DEFAULT_DB = "ozon-book.db"
 # Base должен быть предком других моделей таблиц
 class Base(DeclarativeBase): #pass
     __table_args__ = {'sqlite_autoincrement': True}
-    def searchAttr(self):
+    def searchAttr(self) -> dict:
         """Возвращает словарь, связанный с аттрибутом имеющего опцию QNIQEU: 
         {название: значение}"""
         pass
+
+    def getDict(self) -> dict:
+        """Возвращает словарь с аттрибутами объекта"""
+        dct = vars(self)
+        del dct['_sa_instance_state']
+        if dct.get('book_id'):
+            del dct['id']
+        return dct
 
 class Book(Base):
     __tablename__ = 'books'

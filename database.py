@@ -1,7 +1,7 @@
 import models
 import utils
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, select
 
 def csvToDB(csvPath: str, echo=False) -> None:
     data = utils.csvToDict(csvPath)
@@ -143,8 +143,11 @@ def getPrices(book_id: int = None, lastdays: int = None, datetime_start = None, 
 
         if getTitle:
             for row in result:
+                title = row.book.title
+                if row.book.author:
+                    title = f"{row.book.author} | {title}"
                 prices.append({'book_id': row.book_id,
-                        'book_title': row.book.title,
+                        'book_title': title,
                         'datetime': row.datetime,
                         'price': row.price,
                         'article': row.article,
@@ -167,10 +170,12 @@ def getPriceStat(echo=False) -> list[dict]:
         last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices")).first()[0]
         for row in db.execute(text("SELECT * FROM prices_view_min_avg")).all():
             lst = list(row)
-            # last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices WHERE book_id = {lst[0]}")).first()[0]
             last_prise = db.execute(text(f"SELECT MIN(price) FROM prices WHERE book_id = {lst[0]} AND datetime = '{last_date}'")).first()[0]
             prev_date = db.execute(text(f"SELECT MAX(datetime) FROM prices WHERE book_id = {lst[0]} AND datetime < '{last_date}'")).first()[0]
             prev_prise = db.execute(text(f"SELECT MIN(price) FROM prices WHERE book_id = {lst[0]} AND datetime = '{prev_date}'")).first()[0]
+            author = db.execute(text(f'SELECT author FROM books WHERE id = {lst[0]}')).first()[0]
+            if author:
+                lst[1] = f"{author} | {lst[1]}"
             lst.insert(2, last_date)
             lst.insert(3, last_prise)
             lst.insert(4, prev_date)
@@ -178,6 +183,20 @@ def getPriceStat(echo=False) -> list[dict]:
             lst[-1] = round(lst[-1])
             data.append({k:v for k,v in zip(keys, lst)})
     return data
+
+@models.inSession
+def getLastPrices(book_id: int = None, db=None) -> list[dict]:
+    slct = select(models.Price)
+    wh = ''
+    if book_id:
+        slct = slct.where(models.Price.book_id == book_id) 
+        wh = f'WHERE book_id = {book_id}'
+    last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices {wh}")).first()[0]
+    slct = slct.where(models.Price.datetime == last_date)
+    print(slct)
+    data = db.scalars(slct).all()
+    return [d.getDict() for d in data]
+
 
 @models.inSession
 def delBook(book_id: int, db=None) -> None:
