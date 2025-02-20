@@ -160,7 +160,16 @@ def plotPriceTable(onefile=False, show=False, save=True):
             last_dts.remove(None)
         if None in prev_dts:
             prev_dts.remove(None)
-        dateText = f"Последняя цена на книги от: {', '.join(last_dts)}\nПредыдущая цена книг от: {', '.join(prev_dts)}"
+
+        if len(last_dts) > 1:
+            last_dts = f"{min(last_dts)} - {max(last_dts)}"
+        else:
+            last_dts = ''.join(last_dts)
+        if len(prev_dts) > 1:
+            prev_dts = f"{min(prev_dts)} - {max(prev_dts)}"
+        else:
+            prev_dts = ''.join(prev_dts)
+        dateText = f"Последние цены на книги: {last_dts}\nПредыдущие цены книг: {prev_dts}"
 
         return (cells, cellsColor, dateText)
 
