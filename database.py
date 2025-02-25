@@ -85,6 +85,7 @@ def _getAllBooks( db=None) -> list[models.Book[models.ISBN|models.Article]]:
         book_obj.isbns
         book_obj.articles
         books.append(book_obj)
+        # books.append(book_obj.getDict())
     return books
 # for d in _getAllBooks():
 #     print(d.articles)'''
@@ -207,7 +208,12 @@ def getLastPrices(book_id: int = None, db=None) -> list[dict]:
     last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices {wh}")).first()[0]
     slct = slct.where(models.Price.datetime == last_date)
     data = db.scalars(slct).all()
-    return [d.getDict() for d in data]
+    prices = []
+    for price in data:
+        price.book
+        # prices.append(price)
+        prices.append(price.getDict())
+    return prices
 
 @models.inSession
 def delBook(book_id: int, db=None) -> None:

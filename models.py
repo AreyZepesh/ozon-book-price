@@ -1,5 +1,6 @@
 # from utils import createViewS
 # from typing import Any
+from typing import Any
 from sqlalchemy import create_engine
 from sqlalchemy import Integer
 from sqlalchemy import Text
@@ -24,9 +25,15 @@ class Base(DeclarativeBase): #pass
 
     def getDict(self) -> dict:
         """Возвращает словарь с аттрибутами объекта"""
-        dct = vars(self)
+        dct = vars(self).copy()
+        # Убираем рабочую инфу алхимии
         del dct['_sa_instance_state']
+        # Для НЕ книг - запрос названия и автора книг, удаление id
         if dct.get('book_id'):
+            if dct.get('book'):
+                dct['author'] = self.book.author
+                dct['title'] = self.book.title
+                del dct['book']
             del dct['id']
         if dct.get('options'):
             from utils import strToLst
