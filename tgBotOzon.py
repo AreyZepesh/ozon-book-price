@@ -2,13 +2,15 @@ from utils import getEnv, dictByKeys
 from database import getAllBooks, getLastPrices
 import asyncio
 import logging
+import telegram
 from telegram import (
     Update, 
     ReplyKeyboardMarkup, 
     ReplyKeyboardRemove,
     InlineKeyboardMarkup, 
-    InlineKeyboardButton
+    InlineKeyboardButton,
     )
+from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder, 
     ContextTypes, 
@@ -23,15 +25,51 @@ from telegram.ext import (
 TG_TOKEN = getEnv('TG_TOKEN')
 
 CONV_END = ConversationHandler.END
-BACK, END = range(-2, 0)
+END, BEGIN, BACK, PREV, NEXT, ITER = ["sys"+r for r in map(str,range(6))]
 CATEGORY, BOOK, TXTLINK, IMAGE, OTHER = ["cat"+r for r in map(str,range(5))]
 BOOK_LIST, ADD_BOOK, DEL_BOOK, ADD_ISBN, DEL_ISBN, ADD_ARTICLE, DEL_ARTICLE, B_CSV = ["book"+r for r in map(str,range(8))]
 TL_ALL, TL_ONE = ["tl"+r for r in map(str,range(2))]
+
+MESSAGES = None
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
+
+# итератор для сообщений, чтобы можно было делать инлайн смену сообщений, вперед и назад
+class MessageIter:
+    def __init__(self, data: list) -> None:
+        self.data = data
+        self.count = None
+        self.revers = False
+
+    def __iter__(self):
+        for d in self.data:
+            yield d 
+    
+    def __next__(self):
+        if self.count is None:
+            self.count = 0
+            return self.data[self.count]
+
+        if self.revers:
+            self.count -= 1
+        else:
+            self.count += 1
+        
+        if abs(self.count) >= len(self.data):
+            self.count = 0
+
+        return self.data[self.count]
+    
+    def get_next(self):
+        self.revers = False
+        return self.__next__()
+    
+    def get_prev(self):
+        self.revers = True
+        return self.__next__()
 
 # обе - слегка порно?, в utils?
 def booksList() -> list[str]:
@@ -46,6 +84,7 @@ def booksList() -> list[str]:
     return books
 
 def lastPricesList(book_id: int = None) -> list[str]:
+    # TODO - группировать одинаковые артикли результата
     data = getLastPrices(book_id)
     prices = [[f"Дата поиска: {data[0].get('datetime')}\n"]]
     data = dictByKeys(data, "book_id")
@@ -54,16 +93,19 @@ def lastPricesList(book_id: int = None) -> list[str]:
         if "None. " in text:
             text = text.replace("None. ", "")
         for item in dicts:
-            text += (f"Цена: {item.get('price')}, Тип поиска: {item.get('typeSearch')}\n"
-                    f"https://ozon.kz/product/{item.get('article')} \n")
+            # text += (f"Цена: {item.get('price')}, Тип поиска: {item.get('typeSearch')}\n"
+            #         f"https://ozon.kz/product/{item.get('article')} \n")
+            text += (f"<a href='https://ozon.kz/product/{item.get("article")} '><b>"
+                    f"Цена: {item.get('price')}</b>, Тип поиска: {item.get('typeSearch')}"
+                    f"</a> \n")
         prices.append([text])
     return prices
 
-def lstToMessage(data: list[list[str]], sep: str = "\n") -> list[str]:
+def lstToMessage(data: list[list[str]], maxlenght:int = 1000, maxline:int = 100, sep: str = "\n") -> list[str]:
         messages = []
         text = ""
         for book in data:
-            if len(text+book[0]) > 4095:
+            if len(text+book[0]) > 4095 or len(text+book[0]) > maxlenght or (text+book[0]).count("\n") > maxline:
                 messages.append(text)
                 text = book[0]+sep
             else:
@@ -79,7 +121,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton('Ссылки и цены', callback_data=TXTLINK)],
         [InlineKeyboardButton('Таблицы и графики', callback_data=IMAGE)],
         [InlineKeyboardButton('Разное', callback_data=OTHER)],
-        [endButton]
+        [buttons.get(END)]
         ]
     if update.callback_query:
         await update.callback_query.answer()
@@ -99,7 +141,7 @@ async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Добавить артикль к книге", callback_data=ADD_ARTICLE)],
         [InlineKeyboardButton("Удалить артикль у книги", callback_data=DEL_ARTICLE)],
         [InlineKeyboardButton("Множественное добавление (CSV)", callback_data=B_CSV)],
-        bottomButtons
+        buttons.get("begin+end")
         ]
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Действия c книгами", reply_markup=InlineKeyboardMarkup(book_keys))
@@ -110,12 +152,13 @@ async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(f"Ищу данные", reply_markup=None)
-    for book in lstToMessage(booksList()):
+    msgs = MessageIter(lstToMessage(booksList(), maxline=20))
+    for book in msgs:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=book)
     # Построчный вариант - медленно
     # for book in booksList():
         # await context.bot.send_message(chat_id=update.effective_chat.id, text=book[0])
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Это весь список", reply_markup=InlineKeyboardMarkup([bottomButtons]))
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Это весь список", reply_markup=InlineKeyboardMarkup([buttons.get("back+end")]))
     # Вариант с выводом списка, как меню-клавиатура. Если работать с этим вариаентом не забыть удалить клаву и обработчик по id ("^\d+\.") 
     # await context.bot.send_message(chat_id=update.effective_chat.id, text="Вывел список в меню", reply_markup=ReplyKeyboardMarkup(booksList()))
     return BOOK
@@ -125,7 +168,7 @@ async def add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(f"Выбрано действие с книгой: {update.callback_query.data}", 
-                                                  reply_markup=InlineKeyboardMarkup([bottomButtons]))
+                                                  reply_markup=InlineKeyboardMarkup([buttons.get("back+end")]))
     return BOOK
 
 async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -133,11 +176,13 @@ async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txtlint_keys= [
         [InlineKeyboardButton("Получить данные по книге", callback_data=TL_ONE)],
         [InlineKeyboardButton("Получить данные по всем книгам", callback_data=TL_ALL)],
-        bottomButtons
+        buttons.get("begin+end")
         ]
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Получения данных по последнему парсингу.\nВыдаст название книги, дату парсинга, цены и ссылки на товар с этой ценой", 
                                                   reply_markup=InlineKeyboardMarkup(txtlint_keys))
+    global MESSAGES
+    MESSAGES = None
     return TXTLINK
 
 async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -145,7 +190,8 @@ async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Ok, давай получим список книг", 
                                                   reply_markup=None)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Вывел список в меню", reply_markup=ReplyKeyboardMarkup(booksList()))
+    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберете книгу в меню", reply_markup=ReplyKeyboardMarkup(booksList()))
     
     # TODO
     return CONV_END
@@ -153,13 +199,24 @@ async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
-    await update.callback_query.edit_message_text("Грузим список сообщений", 
-                                                  reply_markup=None)
-    # TODO
-    for msg in lstToMessage(lastPricesList()):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
+    global MESSAGES
+    if not MESSAGES:
+        MESSAGES = MessageIter(lstToMessage(lastPricesList()))
+        text = MESSAGES.get_next()
+    if update.callback_query.data == PREV:
+        text = MESSAGES.get_prev()
+    if update.callback_query.data == NEXT:
+        text = MESSAGES.get_next()
+    else:
+        pass
+    await update.callback_query.edit_message_text(text=text,
+            parse_mode=ParseMode.HTML, disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup([buttons.get("navigate"), buttons.get("back+end")]))
+    # for msg in MESSAGES:
+    #     await context.bot.send_message(chat_id=update.effective_chat.id, text=msg, 
+    #              parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
-    return CONV_END
+    return TXTLINK
 
 async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
@@ -168,7 +225,7 @@ async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Общий график всё время", callback_data=str(CATEGORY))],
         [InlineKeyboardButton("График цен на книгу", callback_data=str(CATEGORY))],
         [InlineKeyboardButton("Графики цен на ВСЕ книг", callback_data=str(CATEGORY))],
-        bottomButtons
+        buttons.get("begin+end")
         ]
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Действия c таблицами и графиками", reply_markup=InlineKeyboardMarkup(image_keys))
@@ -178,16 +235,18 @@ async def cat_other(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     other_keys = [
         [InlineKeyboardButton("TODO", callback_data=str(CATEGORY))],
-        bottomButtons
+        buttons.get("begin+end")
+        # bottomButtons
         ]
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Действия c", reply_markup=InlineKeyboardMarkup(other_keys))
     return CATEGORY
 
 async def end(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Конец?", reply_markup=None)
+    global MESSAGES
+    MESSAGES = None
     return CONV_END
 
 
@@ -201,10 +260,16 @@ if __name__ == '__main__':
     admins = filters.User()
     admins.add_user_ids(794933751)
     
-    
-    endButton = InlineKeyboardButton("Закончить", callback_data=END)
-    backButton = InlineKeyboardButton('Назад', callback_data=BACK)
-    bottomButtons = [backButton, endButton]
+    buttons = {
+        BACK: InlineKeyboardButton('Назад', callback_data=BACK),
+        BEGIN: InlineKeyboardButton('В начало', callback_data=BEGIN),
+        END: InlineKeyboardButton("Закончить", callback_data=END),
+        PREV: InlineKeyboardButton('<<<', callback_data=PREV),
+        NEXT: InlineKeyboardButton('>>>', callback_data=NEXT),
+               }
+    buttons['begin+end'] = [buttons.get(BEGIN), buttons.get(END)]
+    buttons['back+end'] = [buttons.get(BACK), buttons.get(END)]
+    buttons['navigate'] = [buttons.get(PREV), buttons.get(NEXT)]
 
     # Создание "приложения", обертка для api по сути
     application = ApplicationBuilder().token(TG_TOKEN).build()
@@ -229,29 +294,26 @@ if __name__ == '__main__':
         CallbackQueryHandler(add_book, pattern=f"^{ADD_ARTICLE}$"),
         CallbackQueryHandler(add_book, pattern=f"^{DEL_ARTICLE}$"),
         CallbackQueryHandler(add_book, pattern=f"^{B_CSV}$"),
-        #  CallbackQueryHandler(cat_book, pattern=f"^{BACK}$"), 
+        CallbackQueryHandler(cat_book, pattern=f"^{BACK}$"), 
         ]
     
     txtlink_callback = [
         CallbackQueryHandler(txtlint_one, pattern=f"^{TL_ONE}$"),
-        CallbackQueryHandler(txtlint_all, pattern=f"^{TL_ALL}$"),
+        CallbackQueryHandler(txtlint_all, pattern=f"^{TL_ALL}|{PREV}|{NEXT}$"),
+        CallbackQueryHandler(cat_txtlint, pattern=f"^{BACK}$"), 
         ]
-    # cat_states = 
-            # BOOK: [CallbackQueryHandler(cat_book, pattern="^" + str(BOOK) + "$")], 
-            # IMAGE: [CallbackQueryHandler(cat_image, pattern="^" + str(IMAGE) + "$")], 
-            # TXTLINK: [CallbackQueryHandler(cat_txtlint, pattern="^" + str(TXTLINK) + "$")], 
-            # OTHER: [CallbackQueryHandler(cat_other)],
-            # END: [CallbackQueryHandler(end, pattern="^" + str(END) + "$")]
     start_conv_handler = ConversationHandler(
         entry_points = [start_handler],
         states = {
             CATEGORY: cat_callback, 
             BOOK: book_callback,
             TXTLINK: txtlink_callback,
+            # IMAGE: , 
+            # OTHER: ,
             },
         fallbacks = [
             CallbackQueryHandler(end, pattern=f"^{END}$"), 
-            CallbackQueryHandler(start, pattern=f"^{BACK}$")
+            CallbackQueryHandler(start, pattern=f"^{BEGIN}$")
             ]
         )
 
