@@ -151,8 +151,8 @@ def createViewS(dbname: str) -> None:
                                 MIN(price) AS min_price,
                                 AVG(price) AS avg_price
                             FROM prices
-                                LEFT JOIN
-                                books ON prices.book_id = books.id
+                            LEFT JOIN books ON prices.book_id = books.id
+                            WHERE prices.datetime < (SELECT MAX(prices.datetime) FROM prices)
                             GROUP BY book_id
                        """))
 

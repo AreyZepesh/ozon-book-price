@@ -1,4 +1,5 @@
-from utils import makeDir
+from utils import makeDir, getListFiles
+import os
 
 def plotAllPrices(datetime_start=None, datetime_stop=None, show=False, save=True) -> None:
     """Выводит Х - даты, У - все минимальные цены по этой дате.
@@ -12,21 +13,34 @@ def plotAllPrices(datetime_start=None, datetime_stop=None, show=False, save=True
     data = utils.minPriceByKeys(data, firstKey='book_id', secondKey='datetime')
     data = utils.dictByKeys(data, firstKey='book_id')
     plt.figure(figsize=(10,5))
-    min_dt = set()
-    max_dt = set()
+    min_dt, max_dt = set(), set()
+    l_dt, m_dt = None, None
     for items in data.values():
-        prices = []
-        dts = []
+        prices, dts = list(), list()
         for item in items:
             prices.append(item.get('price'))
             dts.append(datetime.strptime(item.get('datetime'), "%Y-%m-%d %H:%M"))
         plt.plot(dts, prices)
+        if not l_dt or not m_dt:
+            l_dt = len(dts)
+            m_dt = len(dts)
+        l_dt = max(len(dts), l_dt)
+        m_dt = min(len(dts), m_dt)
         min_dt.add(min(dts))
         max_dt.add(max(dts))
     min_dt = min(min_dt)-timedelta(hours=2)
     max_dt = max(max_dt)+timedelta(hours=2)
+
+    if l_dt > 20:
+        l_dt = 20
+
+    if l_dt <= 2:
+        m_dt = 0
+
+    # print(l_dt, m_dt)
+
     plt.title('График минимальных цен на книги')
-    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator(minticks=0, maxticks=100, interval_multiples=False))
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator(minticks=m_dt, maxticks=l_dt, interval_multiples=False))
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     plt.gca().set_xlim(min_dt, max_dt)
     plt.xticks(rotation=45)
@@ -48,6 +62,15 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
 
     data = database.getPrices(book_id=book_id, getTitle=True, datetime_start=datetime_start, datetime_stop=datetime_stop)
     data = utils.dictByKeys(data, firstKey='book_id')
+    if save:
+        if book_id == 0:
+            for file in getListFiles(2):
+                    if os.path.exists(file):
+                        os.remove(file)
+        else:
+            file = f"./graphics/b{str(book_id).zfill(3)}.png"
+            if os.path.exists(file):
+                os.remove(file)
     for items in data.values():
         prices = {'text': list(), 'isbn': list(), 'article': list()}
         dts = {'text': [], 'isbn': [], 'article': []}
@@ -72,25 +95,36 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
         plt.grid(True)
         plt.legend(legend)
 
-        l_dt = len(dts['text'] + dts['isbn'] + dts['article'])
+        l_dt = len(set(dts['text'] + dts['isbn'] + dts['article']))
+        if l_dt > 20:
+            l_dt = 20
+
+        if l_dt <= 2:
+            m_dt = 0
+        else:
+            m_dt = l_dt//2
+        # print(len(set(dts['text'] + dts['isbn'] + dts['article'])), l_dt, set(dts['text'] + dts['isbn'] + dts['article']))
+
         min_dt = min(dts['text'] + dts['isbn'] + dts['article'])-timedelta(hours=2)
         max_dt = max(dts['text'] + dts['isbn'] + dts['article'])+timedelta(hours=2)
-        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator(minticks=0, maxticks=l_dt, interval_multiples=False))
+        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator(minticks=m_dt, maxticks=l_dt, interval_multiples=False))
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
         plt.gca().set_xlim(min_dt, max_dt)
         plt.xticks(rotation=45)
-        
         plt.tight_layout()
         if save:
-            plt.savefig(f"{makeDir('./graphics')}/{items[0].get('book_id')}.png")
+            plt.savefig(f"{makeDir('./graphics')}/b{str(items[0].get('book_id')).zfill(3)}.png")
         if show:
             plt.show()
         plt.close()
 
-def plotPriceTable(onefile=False, show=False, save=True):
+def plotPriceTable(onefile=False, telegram_size = True, show=False, save=True):
     from matplotlib import pyplot as plt
     from database import getPriceStat
-
+    if save:
+        for file in getListFiles(0):
+                if os.path.exists(file):
+                    os.remove(file)
     def _genTableData(statPrices: dict) -> tuple[list[list], list[list], str]:
         """Возвращает (cells, cellsColor, dateText)"""
         last_dts, prev_dts = set(), set()
@@ -227,14 +261,16 @@ def plotPriceTable(onefile=False, show=False, save=True):
     
     cells, cellsColor, dateText = _genTableData(getPriceStat())
 
-    ln_to_page = 48
     if onefile:
         ln_to_page = len(cells)
+    elif telegram_size:
+        ln_to_page = 25 
+    else:
+        ln_to_page = 48
     for ct in range(0, len(cells), ln_to_page):
         pl = _plotTable(cells[1*ct:ln_to_page+ct], cellsColor[1*ct:ln_to_page+ct], dateText)
-
         if save:
-            pl.savefig(f"{makeDir('./graphics')}/aBooksTable{ct}.png")
+            pl.savefig(f"{makeDir('./graphics')}/aBooksTable{str(ct+1).zfill(4)}.png")
         if show:
             pl.show()
         pl.close()

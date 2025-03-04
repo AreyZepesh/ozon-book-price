@@ -337,6 +337,22 @@ def getCodeFromEmail(timeH=0.5) -> str:
 
     pass
 
+def getListFiles(searchtype: int, path: str = './graphics', filetype: str = '.png') -> list[str]:
+    """0 - Таблицы цен, 
+    1 - Общий график, 
+    2 - отдельные графики по книгам.
+    Любое другое - вернет все filetype."""
+    import os
+    images = os.listdir(path)
+    if searchtype == 0:
+        return [f"{path}/{image}" for image in images if ("aBooksTable" in image) and (filetype in image)]
+    elif searchtype == 1:
+        return [f"{path}/{image}" for image in images if ("allbooks" in image) and (filetype in image)]
+    elif searchtype == 2:
+        return [f"{path}/{image}" for image in images if ('b' == image[0]) and ("allbooks" not in image) and ("aBooksTable" not in image) and (filetype in image)]
+    else:
+        return [f"{path}/{image}" for image in images if filetype in image]
+
 def main():
     pass
 
