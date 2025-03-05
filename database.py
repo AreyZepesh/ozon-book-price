@@ -99,7 +99,8 @@ def getAllBooks(short = False, echo=False) -> list[dict]:
         for book_obj in all_book_obj:
             if short:
                 books.append({'id': book_obj.id,
-                            'title': book_obj.title})
+                            'title': book_obj.title,
+                            'author': book_obj.author})
             else:
                 isbns = [i.isbn for i in book_obj.isbns]
                 isbns = None if isbns == [] else isbns
