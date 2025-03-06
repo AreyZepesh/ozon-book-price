@@ -11,6 +11,7 @@ from telegram import (
     InlineKeyboardButton,
     InputMediaPhoto,
     InputMediaDocument,
+    Message
     )
 from telegram.constants import ParseMode
 from telegram.ext import (
@@ -79,22 +80,65 @@ class MessageIter:
     def __list__(self):
         return self.data
     
-def listHandler(entry_points, state, callback) -> ConversationHandler:
-    """entry_points - он и есть entry_points для ConversationHandler;\n
-      state - статус, возвращаемой входной и обрабатываемой функцией, так же возращает в него при завершении диалога;\n
-      callback - обрабатываемая функция, не забывать добавлять в неё CONV_END"""
+def myConvHandler(input_pattern, state, callback, forKeyboard: str = 'both') -> ConversationHandler:
+    """
+    input_pattern - он и есть entry_points для ConversationHandler;\n
+    state - статус, возвращаемой входной и обрабатываемой функцией, так же возращает в него при завершении диалога;\n
+    callback - обрабатываемая функция, не забывать добавлять в неё  CONV_END;\n
+    forKeyboard: может быть str['inline'|'reply'|'both'].\n
+    Используй декораторы: 
+    @decConv(_parent_func_) для целевой функции и 
+    @decConvParent для функции родителя
+    """
+    # Устарело, но если проблемы будут с декоратором, то:
+    # Рекомендую: из callback добавить условие (сразу после update.callback_query.answer):
+    #     'if update.callback_query.data == BACK:
+    #         return await _parent_func_(update, context)' 
+    # и в _parent_func_ добавить (сразу после update.callback_query.answer и сообщения):
+    #     'if update.callback_query.data == BACK:
+    #         return CONV_END'
+    state_handlers = []
+    fallback_handlers = [CallbackQueryHandler(callback, pattern=f"^{BACK}$")]
+    # если вдруг после первого вызова повторное не получится вызвать, добавь в паттерн выше еще и input_pattern, для диагностики
+    if forKeyboard == 'both' or forKeyboard == 'reply':
+        state_handlers.append(MessageHandler(filters.Regex(r'^\d+'), callback))
+        state_handlers.append(MessageHandler(filters.Regex(r'^В списке пока нет\.*$'), callback))
+        fallback_handlers.append(MessageHandler(None, callback))
+    if forKeyboard == 'both' or forKeyboard == 'inline':
+        state_handlers.append(CallbackQueryHandler(callback, pattern=f"^{PREV}|{NEXT}$"))
+
     list_conv_hadler = ConversationHandler(
-        entry_points = [entry_points],
-        states = {state: [
-                MessageHandler(filters.Regex(r'^\d+'), callback),
-                MessageHandler(filters.Regex(r'^В списке пока нет книг$'), callback),
-                    ],},
-        fallbacks = [CallbackQueryHandler(callback), MessageHandler(None, callback)],
+        entry_points = [CallbackQueryHandler(callback, pattern=f"^{input_pattern}$")],
+        states = {state: state_handlers},
+        fallbacks = fallback_handlers,
         map_to_parent= {CONV_END: state}
         )
     return list_conv_hadler
 
-#  обе - слегка порно?, в utils?
+def decConv(parent_func):
+    """Декоратор функции, исполняемой в myConvHandler, требует указание родительской функции. Для завершения ConversationHandler"""
+    def decorator(func):
+        async def wrapper(update, context):
+            if update.callback_query:
+                if update.callback_query.data == BACK:
+                    print("! in decConv")
+                    return await parent_func(update, context) 
+            return await func(update, context)
+        return wrapper
+    return decorator
+
+def decConvParent(func):
+    """Декоратор родительской функции, исполняемой в myConvHandler. Для завершения ConversationHandler"""
+    async def wrapper(update, context):
+        if update.callback_query:
+            if update.callback_query.data == BACK:
+                print("! in decConvParent")
+                # await update.callback_query.answer()
+                await func(update, context)
+                return CONV_END
+        return await func(update, context)
+    return wrapper
+
 def booksList(to_button = False) -> list[str]:
     data = getAllBooks(short=True)
     books = []
@@ -241,6 +285,7 @@ async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                                   reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
     return BOOK
 
+@decConvParent
 async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     txtlint_keys= [
@@ -251,52 +296,57 @@ async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Выдаст данные по последнему парсингу: название книги, дату парсинга, цены и ссылки на товар с этой ценой", 
                                                   reply_markup=InlineKeyboardMarkup(txtlint_keys))
-    # if context.user_data.get(MESS_ITER):
-    #     print(f"Удаляем данные итератора, количество сообщенией: {len(context.user_data.get(MESS_ITER))}")
-    #     del context.user_data[MESS_ITER]
+    # if update.callback_query.data == BACK: #or context.user_data.get(BACK):
+    #     return CONV_END
     return TXTLINK
 
-
+@decConv(cat_txtlint)
 async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.callback_query:
         print(update.callback_query.data)
         await update.callback_query.answer()
+
+        # if update.callback_query.data == BACK:
+        #     return await cat_txtlint(update, context)
+        
         await update.callback_query.edit_message_text("Ok, давай получим список книг", 
                                                     reply_markup=None)
         bookButtons = booksList(to_button=True)
         if len(bookButtons) <= 1 and bookButtons[0][0] == NO_BOOK:
-            await update.callback_query.edit_message_text(NO_BOOK, reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
+            await update.callback_query.edit_message_text(NO_BOOK, 
+                            reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
         else:
-            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберете книгу в меню или введите ID", reply_markup=ReplyKeyboardMarkup(bookButtons))
-    
-        return TXTLINK
+            await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                             message_id=update.effective_message.id)
+            await context.bot.send_message(chat_id=update.effective_chat.id, 
+                                           text="Выберете книгу в меню или введите ID", 
+                                           reply_markup=ReplyKeyboardMarkup(bookButtons))
     
     if update.message:
         id = update.message.text.split(". ")[0]
         if not id.isdigit():
             await context.bot.send_message(chat_id=update.effective_chat.id, text="Пожалуйста, выберите книгу из списка")
-            return TXTLINK
-        
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=lstToMessage(lastPricesList(id))[0],
-                                        parse_mode=ParseMode.HTML, disable_web_page_preview=True,
-                                        reply_markup=ReplyKeyboardRemove())
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Что дальше?", reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
-        return CONV_END
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=lstToMessage(lastPricesList(id))[0],
+                                            parse_mode=ParseMode.HTML, disable_web_page_preview=True,
+                                            reply_markup=ReplyKeyboardRemove())
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Что дальше?", reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
+    return TXTLINK
 
+@decConv(cat_txtlint)
 async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
+    # if update.callback_query.data == BACK:
+    #     return await cat_txtlint(update, context)
 
-    text = iterMsg( update, context, lstToMessage(lastPricesList()) ) #, TL_ALL)
+    text = iterMsg( update, context, lstToMessage(lastPricesList()) )
 
     await update.callback_query.edit_message_text(text = text,
             parse_mode=ParseMode.HTML, disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([buttons.get(PREV+NEXT), buttons.get(BACK+END)]))
-    # for msg in context.user_data[MESS_ITER]:
-    #     await context.bot.send_message(chat_id=update.effective_chat.id, text=msg, 
-    #              parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
+    
     return TXTLINK
 
 async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -400,8 +450,9 @@ if __name__ == '__main__':
         ]
 
     txtlink_callback = [
-        listHandler(CallbackQueryHandler(txtlint_one, pattern=f"^{TL_ONE}$"), TXTLINK, txtlint_one),
-        CallbackQueryHandler(txtlint_all, pattern=f"^{TL_ALL}|{PREV}|{NEXT}$"),
+        myConvHandler(TL_ONE, TXTLINK, txtlint_one, forKeyboard = 'reply'),
+        myConvHandler(TL_ALL, TXTLINK, txtlint_all, forKeyboard = 'inline'),
+        # CallbackQueryHandler(txtlint_all, pattern=f"^{TL_ALL}|{PREV}|{NEXT}$"),
         CallbackQueryHandler(cat_txtlint, pattern=f"^{BACK}$"), 
         ]
     
