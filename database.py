@@ -41,7 +41,9 @@ def getId(obj, echo=False) -> int|None:
 
 @models.inSession
 def getBookTitle(book_id: int, db=None) -> str:
-    return db.get(models.Book, book_id).title
+    book = db.get(models.Book, book_id)
+    if book:
+        return book.title
 
 def addBookToDB(book: dict, echo=False) -> int:
     """Добавить книгу в дб, вернуть ID.

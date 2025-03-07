@@ -1,4 +1,5 @@
 import utils
+import plots
 from getDriver import getDriver
 from database import addPrice as addPriceToDB
 
@@ -141,8 +142,7 @@ def main():
     except:
         auth_msg = "Аутентификация не удалась"
     finally:
-        print('>>>   ', auth_msg, '   <<<')
-        print()
+        print('>>>   ', auth_msg, '   <<<\n')
 
     dataList = []
     for book in utils.getAllData(): 
@@ -171,6 +171,8 @@ def main():
             except Exception as ex:
                 print(ex)
                 
+    sleep(2)
+    driver.quit()
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
     
     if len(dataList) > 0:
@@ -182,12 +184,9 @@ def main():
         for data in dataList:
             addPriceToDB(data)
 
-    sleep(2)
-    # driver.close()
-    driver.quit()
+        plots.plotPriceTable()
 
 
-    pass
 
 if __name__  == '__main__':
     main()

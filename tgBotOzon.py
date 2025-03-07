@@ -1,5 +1,5 @@
 from utils import getEnv, dictByKeys, getListFiles
-from database import getAllBooks, getLastPrices
+import database
 import asyncio
 import logging
 import telegram
@@ -73,7 +73,12 @@ class MessageIter:
     def get_prev(self):
         self.revers = True
         return self.__next__()
-    
+
+    def restart(self):
+        self.count = None
+        self.revers = False
+        return self.__next__()
+
     def __len__(self):
         return len(self.data)
     
@@ -102,7 +107,7 @@ def myConvHandler(input_pattern, state, callback, forKeyboard: str = 'both') -> 
     # если вдруг после первого вызова повторное не получится вызвать, добавь в паттерн выше еще и input_pattern, для диагностики
     if forKeyboard == 'both' or forKeyboard == 'reply':
         state_handlers.append(MessageHandler(filters.Regex(r'^\d+'), callback))
-        state_handlers.append(MessageHandler(filters.Regex(r'^В списке пока нет\.*$'), callback))
+        state_handlers.append(MessageHandler(filters.Regex(f'^{NO_BOOK}$'), callback))
         fallback_handlers.append(MessageHandler(None, callback))
     if forKeyboard == 'both' or forKeyboard == 'inline':
         state_handlers.append(CallbackQueryHandler(callback, pattern=f"^{PREV}|{NEXT}$"))
@@ -111,6 +116,7 @@ def myConvHandler(input_pattern, state, callback, forKeyboard: str = 'both') -> 
         entry_points = [CallbackQueryHandler(callback, pattern=f"^{input_pattern}$")],
         states = {state: state_handlers},
         fallbacks = fallback_handlers,
+        allow_reentry = True,
         map_to_parent= {CONV_END: state}
         )
     return list_conv_hadler
@@ -120,9 +126,10 @@ def decConv(parent_func):
     def decorator(func):
         async def wrapper(update, context):
             if update.callback_query:
-                if update.callback_query.data == BACK:
+                if update.callback_query.data == BACK and context.user_data.get('Conversation'):
                     print("! in decConv")
                     return await parent_func(update, context) 
+                context.user_data['Conversation'] = True
             return await func(update, context)
         return wrapper
     return decorator
@@ -131,38 +138,43 @@ def decConvParent(func):
     """Декоратор родительской функции, исполняемой в myConvHandler. Для завершения ConversationHandler"""
     async def wrapper(update, context):
         if update.callback_query:
-            if update.callback_query.data == BACK:
+            if update.callback_query.data == BACK and context.user_data.get('Conversation'):
                 print("! in decConvParent")
-                # await update.callback_query.answer()
                 await func(update, context)
+                #секция для удаления reply клавиатуры
+                if context.user_data.get("keyboardMessages"):
+                    await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                                      message_id=context.user_data.get("keyboardMessages")[0])
+                    del context.user_data["keyboardMessages"]
+                if context.user_data.get('toDelete'):
+                    del context.user_data['toDelete']
+                context.user_data['Conversation'] = False
                 return CONV_END
         return await func(update, context)
     return wrapper
 
-def booksList(to_button = False) -> list[str]:
-    data = getAllBooks(short=True)
+def booksList(to_button = False) -> list[str|list]:
+    data = database.getAllBooks(short=True)
     books = []
     for item in data[:]:
         item = f"{item.get("id")}. {item.get("author")}. {item.get("title")}"
         if "None. " in item:
             item = item.replace("None. ", "")
-        if to_button:
-            item = [item]
         books.append(item)
     # books = [] # тест пустого списка
     if books == []:
-        item = NO_BOOK
-        if to_button:
-            item = [item]
-        books.append(item)
+        books.append(NO_BOOK)
+    if to_button and books[0] != NO_BOOK:
+        # books.insert(0, '0. Назад')
+        books = [[b] for b in books]
     return books
 
 def lastPricesList(book_id: int = None) -> list[str]:
     # TODO - группировать одинаковые артикли результата
     # TODO - дата в каждом сообщении?
-    data = getLastPrices(book_id)
+    data = database.getLastPrices(book_id)
     if data == []:
-        return ["По этой книге еще не было результатов"]
+        return [f"По книге c id {book_id} еще не было результатов"]
     prices = [f"Дата поиска: {data[0].get('datetime')}\n",]
     data = dictByKeys(data, "book_id")
     for dicts in data.values():
@@ -207,7 +219,7 @@ def iterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE, listMsg: list) -
     elif update.callback_query.data == PREV:
         text = context.user_data[MESS_ITER].get_prev()
     else:
-        text = context.user_data[MESS_ITER].get_next()
+        text = context.user_data[MESS_ITER].restart()
 
     len_msg = len(context.user_data[MESS_ITER])
     
@@ -216,13 +228,49 @@ def iterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE, listMsg: list) -
         count = f"{( (len_msg+iter_count) % len_msg )+1}/{len_msg}"
         return f'{text}{" "*30}{count}'
     return text
-        
-    
 
-# Реакция на /start в боте
+async def book_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int|None:
+    """Добавляем клавиатуру со списком книг. При выборе пользователя возвращает id"""
+    if update.callback_query and not context.user_data.get("keyboardMessages"):
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text("Ok, давай получим список книг", 
+                                                    reply_markup=None)
+        bookButtons = booksList(to_button=True)
+        if len(bookButtons) <= 1 and bookButtons[0][0] == NO_BOOK:
+            await update.callback_query.edit_message_text(NO_BOOK, 
+                            reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
+        else:
+            await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                                message_id=update.effective_message.id)
+            # добавить в user_data и удалять при следующем шаге? или просто отмену 
+            mes1 =  await context.bot.send_message(chat_id=update.effective_chat.id, 
+                                            text="Выберете книгу в меню или введите ID", 
+                                            reply_markup=ReplyKeyboardMarkup(bookButtons))
+            mes2 = await context.bot.send_message(chat_id=update.effective_chat.id,
+                                                text="Ваш выбор?",
+                                                reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
+            context.user_data["keyboardMessages"] = [mes1.id, mes2.id]
+        return None
+    
+    if update.message and context.user_data.get("keyboardMessages"):
+        id = update.message.text.split(". ")[0]
+        if not id.isdigit() or not database.getBookTitle(id):
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
+            mes = await context.bot.send_message(chat_id=update.effective_chat.id, 
+                    text="По указанным данным не найдена книга. Пожалуйста, выберите книгу из списка",
+                    reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
+            if context.user_data.get("keyboardMessages"):
+                await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                                 message_id=context.user_data.get("keyboardMessages").pop(-1) )
+                context.user_data.get("keyboardMessages").append(mes.id) 
+        else:
+            if context.user_data.get("keyboardMessages"):
+                await context.bot.delete_messages(chat_id=update.effective_chat.id, message_ids=context.user_data.get("keyboardMessages"))
+                del context.user_data["keyboardMessages"]
+            return id 
+    return None
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # if context.user_data.get(MESS_ITER):
-    #     del context.user_data[MESS_ITER]
     cat_keys = [
         [InlineKeyboardButton('Книги в базе', callback_data=BOOK)], 
         [InlineKeyboardButton('Ссылки и цены', callback_data=TXTLINK)],
@@ -237,10 +285,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(text="Выбери категорию действий", reply_markup=InlineKeyboardMarkup(cat_keys))
     return CATEGORY
 
+
+## BOOK
+@decConvParent
 async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
-    # if context.user_data.get(MESS_ITER):
-    #     del context.user_data[MESS_ITER]
     book_keys = [
         [InlineKeyboardButton("Cписок книг", callback_data=BOOK_LIST)],
         [InlineKeyboardButton("Добавить книгу", callback_data=ADD_BOOK)],
@@ -256,7 +305,7 @@ async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.edit_message_text("Действия c книгами", reply_markup=InlineKeyboardMarkup(book_keys))
     return BOOK
 
-
+@decConv(cat_book)
 async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
@@ -270,7 +319,6 @@ async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=InlineKeyboardMarkup([buttons.get(PREV+NEXT), buttons.get(BACK+END)]))
     return BOOK
 
-
 async def add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
@@ -278,13 +326,45 @@ async def add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                                   reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
     return BOOK
 
+@decConv(cat_book)
 async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(f"Выбрано действие с книгой: {update.callback_query.data}", 
-                                                  reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
+    password_to_del = "Exterminate"
+    if not context.user_data.get('toDelete'):
+        id = await book_buttons(update, context)
+        if id:
+            mes = await context.bot.send_message(chat_id=update.effective_chat.id, 
+                text=f"Вы действиетельно хотите удалить книгу и связанные с ней данные из базы? Если да, то введите '{password_to_del}'", 
+                reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
+            context.user_data['toDelete'] = (id, mes.id)
+    elif context.user_data.get('toDelete'):
+        if update.message and update.message.text == password_to_del:
+            book_id = context.user_data.get('toDelete')[0]
+            title = database.getBookTitle(book_id)
+            
+            # TODO работает, но на время разработки отключил
+            # database.delBook(book_id)
+
+            text = f"Книга {book_id}. {title} была стерта из базы!"
+            await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                              message_id=update.effective_message.id)
+            await context.bot.edit_message_text(chat_id=update.effective_chat.id, 
+                                              message_id=context.user_data.get("toDelete")[1],
+                                              text = text, reply_markup=None)
+            print(text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text = "Что дальше?", 
+                                                reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
+        elif update.message:
+            await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                              message_id=update.effective_message.id)
+            await context.bot.edit_message_text(chat_id=update.effective_chat.id, 
+                                              message_id=context.user_data.get("toDelete")[1],
+                                              text = "Отмена операции удаления", 
+                                              reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
+        del context.user_data['toDelete']
     return BOOK
 
+
+## TXTLINK
 @decConvParent
 async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
@@ -302,43 +382,19 @@ async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @decConv(cat_txtlint)
 async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.callback_query:
-        print(update.callback_query.data)
-        await update.callback_query.answer()
-
-        # if update.callback_query.data == BACK:
-        #     return await cat_txtlint(update, context)
-        
-        await update.callback_query.edit_message_text("Ok, давай получим список книг", 
-                                                    reply_markup=None)
-        bookButtons = booksList(to_button=True)
-        if len(bookButtons) <= 1 and bookButtons[0][0] == NO_BOOK:
-            await update.callback_query.edit_message_text(NO_BOOK, 
-                            reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
-        else:
-            await context.bot.delete_message(chat_id=update.effective_chat.id, 
-                                             message_id=update.effective_message.id)
-            await context.bot.send_message(chat_id=update.effective_chat.id, 
-                                           text="Выберете книгу в меню или введите ID", 
-                                           reply_markup=ReplyKeyboardMarkup(bookButtons))
-    
-    if update.message:
-        id = update.message.text.split(". ")[0]
-        if not id.isdigit():
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="Пожалуйста, выберите книгу из списка")
-        else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=lstToMessage(lastPricesList(id))[0],
-                                            parse_mode=ParseMode.HTML, disable_web_page_preview=True,
-                                            reply_markup=ReplyKeyboardRemove())
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="Что дальше?", reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
+    id = await book_buttons(update, context)
+    # print(id)
+    if id:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=lstToMessage(lastPricesList(id))[0],
+                                        parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Что дальше?", 
+                                        reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
     return TXTLINK
 
 @decConv(cat_txtlint)
 async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     await update.callback_query.answer()
-    # if update.callback_query.data == BACK:
-    #     return await cat_txtlint(update, context)
 
     text = iterMsg( update, context, lstToMessage(lastPricesList()) )
 
@@ -349,6 +405,8 @@ async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     return TXTLINK
 
+
+## IMAGE
 async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     image_keys = [
@@ -376,6 +434,7 @@ async def image_table(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return IMAGE
 
 
+## OTHER
 async def cat_other(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.callback_query.data)
     # if context.user_data.get(MESS_ITER):
@@ -389,12 +448,20 @@ async def cat_other(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.edit_message_text("Действия c", reply_markup=InlineKeyboardMarkup(other_keys))
     return CATEGORY
 
+
+## SYS
 async def end(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get(MESS_ITER):
-        del context.user_data[MESS_ITER]
     if update.callback_query:
         await update.callback_query.answer()
-        await update.callback_query.edit_message_text("Конец диалога", reply_markup=None)
+        if context.user_data.get("keyboardMessages"):
+            await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                    message_id=context.user_data.get("keyboardMessages")[0])
+        for x in list(context.user_data.keys()):
+            del context.user_data[x] 
+        await update.callback_query.edit_message_text("Полный конец обеда. Впиливаешь?", reply_markup=None)
+        await asyncio.sleep(5)
+        await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                    message_id=update.effective_message.id)
     return CONV_END
 
 async def ext(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -403,11 +470,6 @@ async def ext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    g_books = getAllBooks(short=True)
-    g_books = [[". ".join( map( str, b.values() ) )] for b in g_books]
-    # print(g_books)
-    # books_markup = ReplyKeyboardMarkup(books)
-
     # ограничение пользователей
     admins = filters.User()
     admins.add_user_ids(794933751)
@@ -438,9 +500,11 @@ if __name__ == '__main__':
         ]
 
     book_callback = [
-        CallbackQueryHandler(book_list, pattern=f"^{BOOK_LIST}|{PREV}|{NEXT}$"),
+        myConvHandler(BOOK_LIST, BOOK, book_list, forKeyboard = 'inline'),
+        # CallbackQueryHandler(book_list, pattern=f"^{BOOK_LIST}|{PREV}|{NEXT}$"),
         CallbackQueryHandler(add_book, pattern=f"^{ADD_BOOK}$"),
-        CallbackQueryHandler(del_book, pattern=f"^{DEL_BOOK}$"),
+        myConvHandler(DEL_BOOK, BOOK, del_book, forKeyboard = 'reply'),
+        # CallbackQueryHandler(del_book, pattern=f"^{DEL_BOOK}$"),
         CallbackQueryHandler(add_book, pattern=f"^{ADD_ISBN}$"),
         CallbackQueryHandler(add_book, pattern=f"^{DEL_ISBN}$"),
         CallbackQueryHandler(add_book, pattern=f"^{ADD_ARTICLE}$"),
@@ -476,8 +540,8 @@ if __name__ == '__main__':
             },
         fallbacks = [
             CallbackQueryHandler(end, pattern=f"^{END}$"), 
-            CallbackQueryHandler(start, pattern=f"^{BEGIN}$"),
-            start_handler
+            # CallbackQueryHandler(start, pattern=f"^{BEGIN}$"),
+            # start_handler
             ]
         )
 
@@ -485,4 +549,4 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler('exit', ext))
     application.add_handler(start_conv_handler)
     application.run_polling()
-
+    
