@@ -540,8 +540,8 @@ if __name__ == '__main__':
             },
         fallbacks = [
             CallbackQueryHandler(end, pattern=f"^{END}$"), 
-            # CallbackQueryHandler(start, pattern=f"^{BEGIN}$"),
-            # start_handler
+            CallbackQueryHandler(start, pattern=f"^{BEGIN}$"),
+            start_handler
             ]
         )
 
