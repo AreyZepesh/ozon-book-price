@@ -2,9 +2,16 @@ from selenium_stealth import stealth
 import undetected_chromedriver as uc
 
 def getDriver(headless=False):
-    # options = uc.ChromeOptions()
+    # опции нужны для линукс версии, особенно без гпу и сандбокса
+    options = uc.ChromeOptions()
+    options.add_argument("--window-size=1920,1080")
+    # options.add_argument("--disable-extensions")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    # options.add_argument("--disable-setuid-sandbox")
+    # options.add_argument("--disable-dev-shm-usage")
 
-    driver = uc.Chrome(headless=headless)
+    driver = uc.Chrome(headless=headless, options=options)
     
     # Эти параменты теоретически могут отличаться на разных системах
     # При этом - те же параментры прекрастно гуглятся, поэтому - оставлю

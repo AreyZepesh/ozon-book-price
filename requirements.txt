@@ -1,0 +1,9 @@
+selenium
+selenium_stealth
+undetected_chromedriver
+SQLAlchemy
+matplotlib
+python-telegram-bot
+bs4
+dotenv
+setuptools
