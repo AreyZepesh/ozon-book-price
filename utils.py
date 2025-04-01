@@ -345,13 +345,13 @@ def getListFiles(searchtype: int, path: str = './graphics', filetype: str = '.pn
     import os
     images = os.listdir(path)
     if searchtype == 0:
-        return [f"{path}/{image}" for image in images if ("aBooksTable" in image) and (filetype in image)]
+        return [f"{path}/{image}" for image in images if ("aBooksTable" in image) and (filetype in image)].sort()
     elif searchtype == 1:
-        return [f"{path}/{image}" for image in images if ("allbooks" in image) and (filetype in image)]
+        return [f"{path}/{image}" for image in images if ("allbooks" in image) and (filetype in image)].sort()
     elif searchtype == 2:
-        return [f"{path}/{image}" for image in images if ('b' == image[0]) and ("allbooks" not in image) and ("aBooksTable" not in image) and (filetype in image)]
+        return [f"{path}/{image}" for image in images if ('b' == image[0]) and ("allbooks" not in image) and ("aBooksTable" not in image) and (filetype in image)].sort()
     else:
-        return [f"{path}/{image}" for image in images if filetype in image]
+        return [f"{path}/{image}" for image in images if filetype in image].sort()
 
 def main():
     pass
