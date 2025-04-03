@@ -1,5 +1,6 @@
 from selenium_stealth import stealth
 import undetected_chromedriver as uc
+from webdriver_manager.chrome import ChromeDriverManager
 
 def getDriver(headless=False):
     # опции нужны для линукс версии, особенно без гпу и сандбокса
@@ -11,7 +12,9 @@ def getDriver(headless=False):
     # options.add_argument("--disable-setuid-sandbox")
     # options.add_argument("--disable-dev-shm-usage")
 
-    driver = uc.Chrome(headless=headless, options=options)
+    driver = uc.Chrome(headless=headless, options=options, 
+                       driver_executable_path=ChromeDriverManager().install(),
+                       )
     
     # Эти параменты теоретически могут отличаться на разных системах
     # При этом - те же параментры прекрастно гуглятся, поэтому - оставлю
@@ -40,7 +43,10 @@ def getDriver(headless=False):
     return driver
 
 def main():
-    return getDriver()
+    pass
+
+    print(ChromeDriverManager().install())
+    #return getDriver()
 
 if __name__  == '__main__':
     main()

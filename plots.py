@@ -275,3 +275,8 @@ def plotPriceTable(onefile=False, telegram_size = True, show=False, save=True):
             pl.show()
         pl.close()
                                     
+def main():
+    pass
+
+if __name__  == '__main__':
+    main()
