@@ -274,7 +274,10 @@ def getEnv(key=None) -> str|dict:
     from dotenv import dotenv_values
 
     if key:
-        return dotenv_values('.env').get(key)
+        value = dotenv_values('.env').get(key)
+        if value:
+            return value
+        return None
     return dotenv_values('.env')
 
 def getEmail() -> list[list]:
@@ -285,10 +288,15 @@ def getEmail() -> list[list]:
     # TODO фильтр: отправитель - озон или телефон
     import imaplib, email
     acceptFrom = ('ozzionni@gmail.com', 'mailer@sender.ozon.ru')
+    email_imap = getEnv('EMAIL_IMAP')
+    email_imap_port = getEnv('EMAIL_IMAP_PORT')
     email_login = getEnv('EMAIL_LOGIN')
     email_password = getEnv('EMAIL_PASSWORD')
+    # if not (email_imap and email_imap_port and email_login and email_password):
+    #     # print("Один или более из параметров для почты пуст")
+    #     return None
     mails = []
-    with imaplib.IMAP4_SSL("imap.yandex.kz", port=993) as imap:
+    with imaplib.IMAP4_SSL(email_imap, port=email_imap_port) as imap:
         imap.login(email_login, email_password)
         imap.select("INBOX")
         data = imap.search(None, 'ALL')[1]
@@ -325,8 +333,10 @@ def getCodeFromEmail(timeH=0.5) -> str:
     import re
     from datetime import timedelta, datetime
     dtnow = datetime.now()
-
-    for mail in getEmail():
+    mails = getEmail()
+    # if not mails:
+    #     return None
+    for mail in mails:
         if dtnow - mail[0] > timedelta(hours=timeH):
             continue
         for row in mail[1:]:
@@ -335,7 +345,6 @@ def getCodeFromEmail(timeH=0.5) -> str:
             else:
                 return re.search( '[0-9]{6}', normalizeStr(row) ).group()
 
-    pass
 
 def getListFiles(searchtype: int, path: str = './graphics', filetype: str = '.png') -> list[str]:
     """0 - Таблицы цен, 

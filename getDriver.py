@@ -1,8 +1,7 @@
 from selenium_stealth import stealth
 import undetected_chromedriver as uc
-from webdriver_manager.chrome import ChromeDriverManager
 
-def getDriver(headless=False):
+def getDriver(headless=False, version_main = None):
     # опции нужны для линукс версии, особенно без гпу и сандбокса
     options = uc.ChromeOptions()
     options.add_argument("--window-size=1920,1080")
@@ -13,7 +12,7 @@ def getDriver(headless=False):
     # options.add_argument("--disable-dev-shm-usage")
 
     driver = uc.Chrome(headless=headless, options=options, 
-                       driver_executable_path=ChromeDriverManager().install(),
+                       version_main = version_main,
                        )
     
     # Эти параменты теоретически могут отличаться на разных системах
@@ -44,9 +43,6 @@ def getDriver(headless=False):
 
 def main():
     pass
-
-    print(ChromeDriverManager().install())
-    #return getDriver()
 
 if __name__  == '__main__':
     main()

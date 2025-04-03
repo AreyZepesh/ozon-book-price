@@ -1,0 +1,7 @@
+*/*
+.comments
+test*.*
+*.db
+*.env
+_схема.jpg
+*.zip
