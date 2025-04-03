@@ -127,9 +127,9 @@ def saveCookie(driver, file='./tmp/new.json'):
 
 
 def main():
-    chrom_version = utils.getEnv("CHROMIUM_VERSION")
+    chrome_version = utils.getEnv("CHROMIUM_VERSION")
     baseURL = "https://ozon.kz/"
-    driver = getDriver(True, chrom_version)
+    driver = getDriver(True, chrome_version)
     driver.get(baseURL)
     
     try:

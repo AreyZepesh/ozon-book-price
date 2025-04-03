@@ -276,6 +276,10 @@ def getEnv(key=None) -> str|dict:
     if key:
         value = dotenv_values('.env').get(key)
         if value:
+            if value.isdigit():
+                value = int(value)
+            if value == "None":
+                value = None
             return value
         return None
     return dotenv_values('.env')
