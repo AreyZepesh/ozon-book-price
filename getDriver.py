@@ -38,7 +38,7 @@ def getDriver(headless=False, version_main = None):
             renderer = "Intel Iris OpenGL Engine",
             fix_hairline = True,
             run_on_insecure_origins = True,)
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(120)
     return driver
 
 def main():
