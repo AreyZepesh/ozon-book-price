@@ -38,6 +38,7 @@ def getDriver(headless=False, version_main = None):
             renderer = "Intel Iris OpenGL Engine",
             fix_hairline = True,
             run_on_insecure_origins = True,)
+    driver.command_executor.set_timeout(1200)
     driver.implicitly_wait(120)
     return driver
 
