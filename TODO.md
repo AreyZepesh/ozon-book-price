@@ -1,9 +1,6 @@
-удалить 16, 163
 тг бот - в процессе
 
 для csv - фильтр пробелов и точек
-
-прифигачить постоянный хромдрайвер?
 
 файл инициализация всего - создание пустой бд, папок, импорт из csv если он есть, создание расписания
 
@@ -26,13 +23,6 @@ flush при добавлении книг в дб
 
 обновить методы алхимии? select.where.scalars вместо query.filter (database.getLastPrices() - пример)
 
-
-Ошибка после обновления:
-from session not created: This version of ChromeDriver only supports Chrome version 
-Current browser version is
-
-и родственная, из под батника, работе не мешает
-could not detect version_main.therefore, we are assuming it is chrome 108 or higher
 
 КОММЕНТ:
 строка поиска книжек https://ozon.kz/category/knigi-16500/?sorting=price&text=
