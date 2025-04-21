@@ -1,11 +1,16 @@
-def strToLst(string: str, sep: str = ',') -> list:
+def strToLst(string: str, sep: str = ',', replase_dots = True) -> list:
     """Преобразует строку в список, по указанному разделителю.
     Пропускает пустые строки"""
     if string is None: return None
-    tmp =[]
+    tmp = []
+    string = string.replace(" ", "")
+    if replase_dots:
+        string = string.replace(".", sep)
     for i in string.split(sep):
         if i != '':
-            tmp.append(normalizeStr(i))
+            item = normalizeStr(i)
+            
+            tmp.append(item)
     return tmp
 
 def cleanDict(data: dict) -> dict:
@@ -22,10 +27,10 @@ def normalizeStr(string: str) -> str:
     """Нормализует данные в строке:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
-    string = string.replace('\t',' ')
-    string = string.replace('\r\n',' ')
-    string = string.replace('\n',' ')
-    string = string.replace('\u2009',' ')
+    string = string.replace('\t', ' ')
+    string = string.replace('\r\n', ' ')
+    string = string.replace('\n', ' ')
+    string = string.replace('\u2009', ' ')
     string = string.replace(' ', ' ') 
     while '  ' in string:
         string = string.replace('  ', ' ')
