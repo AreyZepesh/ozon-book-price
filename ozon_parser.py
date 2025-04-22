@@ -178,6 +178,7 @@ def main():
     
     if len(dataList) > 0:
         dataList = utils.minPriceByKeys(dataList)
+        dataList = utils.uniArticleByKeys(dataList)
 
         utils.toJSON(dataList)
         utils.dictToCSV(dataList)

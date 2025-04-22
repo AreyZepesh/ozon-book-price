@@ -147,8 +147,8 @@ def minPriceByKeys(lst: list[dict], firstKey='book_id', secondKey='typeSearch') 
     data = dictByKeys(lst, firstKey, secondKey)
 
     res = []
-    # Отправленяем список словарей, где на один тип одного id более одного словаря в min функцию
-    # Результат функции и списки, где по одному словарю добавляем в возврощаемый список словарей
+    # Отправленяем список словарей, где на один тип одного id имеется более одного словаря в min функцию
+    # Результат функции и списки, где по одному словарю добавляем в возвращаемый список словарей
     for value in data.values():
         if len(value) > 1:
             mPriceItem = minPrice(value)
@@ -156,6 +156,7 @@ def minPriceByKeys(lst: list[dict], firstKey='book_id', secondKey='typeSearch') 
                 res.append(mPriceItem)
         elif len(value) == 1:
             res.extend(value)
+            
     return res
 
 def minPrice(lst: list[dict]) -> dict:
@@ -169,6 +170,44 @@ def minPrice(lst: list[dict]) -> dict:
     minPrice = min(prices)
     for item in lst:
         if item.get('price', None) == minPrice:
+            return item
+
+def uniArticleByKeys(lst: list[dict], firstKey='book_id', secondKey='article') -> list[dict]:
+    """Принимает список словарей, делит по первому и второму ключу.
+    По умолчанию ключи для словарей цен, а именно :'book_id' и 'article'.
+    В словарях ОБЯЗАТЕЛЬНО должен быть ключ 'typeSearch'.
+    """
+    data = dictByKeys(lst, firstKey, secondKey)
+
+    res = []
+    # Отправленяем список словарей, где на один артикль одного id имеется более одного словаря функцию
+    # Результат функции и списки, где по одному словарю добавляем в возвращаемый список словарей
+    for value in data.values():
+        # print(value)
+        if len(value) > 1:
+            uniqItem = uniqueArticle(value)
+            if uniqItem is not None:
+                res.append(uniqItem)
+        elif len(value) == 1:
+            res.extend(value)
+            
+    return res
+
+def uniqueArticle(lst: list[dict]) -> dict:
+    """Принимает список словарей. 
+    Возвращает один словарь с уникальным article.
+    Должны быть словари, содержащий как минимум:
+    {'typeSearch': str}."""
+    types = [item.get('typeSearch') for item in lst]
+    if "article" in types:
+        uniType = "article"
+    elif "isbn" in types:
+        uniType = "isbn"
+    else:
+        uniType = "text"
+
+    for item in lst:
+        if item.get('typeSearch', None) == uniType:
             return item
 
 def getSearhData(book: dict) -> list[dict]:
