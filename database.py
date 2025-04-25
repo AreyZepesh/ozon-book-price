@@ -178,9 +178,7 @@ def getPrices(book_id: int = None, lastdays: int = None, datetime_start = None, 
                     'typeSearch': row.typeSearch})
     return prices
 
-def getPriceStat(echo=False) -> list[dict]:
-    """Выводит статистику по книгам: последняя цена и дата, минимальняя и средняя цены. 
-    Возвращает список словарей"""
+"""def getPriceStat(echo=False) -> list[dict]:
     data = []
     keys = ['book_id', 'book_title', 'last_date', 'last_price', 'prev_date', 'prev_priсe', 'min_price', 'avg_price']
     with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
@@ -199,7 +197,14 @@ def getPriceStat(echo=False) -> list[dict]:
             lst.insert(5, prev_priсe)
             lst[-1] = round(lst[-1])
             data.append({k:v for k,v in zip(keys, lst)})
-    return data
+    return data"""
+
+@models.inSession
+def getPriceStat(db=None) -> list[dict]:
+    """Выводит статистику по книгам: последняя цена и дата, минимальняя и средняя цены. 
+    Возвращает список словарей"""
+    data = db.execute(text(f"SELECT * FROM prices_stat")).all()
+    return [dict(item._mapping) for item in data]
 
 @models.inSession
 def getLastPrices(book_id: int = None, db=None) -> list[dict]:
