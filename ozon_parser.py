@@ -24,7 +24,11 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
     def _cardData(cardOBJ) -> dict:
         """Подфункция сбора данных с одной карточки"""
         title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
+        # Для отладки
+        # print(f", |{book_title}| >>>  |{title}|")
         if not utils.isTITLEinSTR(book_title, title):
+            # Для отладки
+            # print("Не совпадает")
             return
         card = PRICEDCT.copy()
         card['book_id'] = book_id
@@ -35,7 +39,7 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
         card['typeSearch'] = type
         return card
     
-    cardsOBJs = driver.find_elements( By.XPATH, "//div[@data-index]" )
+    cardsOBJs = driver.find_elements( By.XPATH, "//div[@data-index and @class]" )
     if cardsOBJs == []:
         return
     
@@ -129,7 +133,7 @@ def saveCookie(driver, file='./tmp/new.json'):
 def main():
     chrome_version = utils.getEnv("CHROMIUM_VERSION")
     baseURL = "https://ozon.kz/"
-    driver = getDriver(True, chrome_version)
+    driver = getDriver(False, chrome_version)
     driver.get(baseURL)
     
     try:
@@ -147,7 +151,8 @@ def main():
 
     dataList = []
     for book in utils.getAllData(): 
-        # if book.get('book_id') != 22:
+        # Для отладки
+        # if book.get('book_id') <= 127:
         #     continue
         print(book['title'])
         for item in book['URLs']:
@@ -166,11 +171,18 @@ def main():
                 elif "category/knigi-16500" in driver.current_url:
                     find = findOnSearchPage(driver, book['book_id'], book['title'], item['type'])
 
+                # Для отладки
+                # if find is not None:
+                #     print(find)
+
                 if find is not None and find not in dataList:
                     dataList.append(find)
 
             except Exception as ex:
                 print(ex)
+
+            # Для отладки
+            # input("\n   >>>   Next")
                 
     sleep(2)
     driver.quit()

@@ -92,8 +92,9 @@ def strFromComparison(string: str) -> str:
     """Убирает из строки все кроме букв, цифр и пробелов.
     Так же нормализует"""
     import re
-    string = re.sub("[^a-zA-Zа-яА-Я0-9 ]", " ", string)
     string = re.sub("ё", "е", string)
+    string = re.sub("Ё", "Е", string)
+    string = re.sub("[^a-zA-Zа-яА-Я0-9 ]", " ", string)
     string = normalizeStr(string)
     string = string.lower()
     return string
@@ -113,7 +114,7 @@ def isTITLEinSTR(title: str, string: str) -> bool:
     if title in string:
         return True
     if haveDot and (' ' in title) and (len(title.strip(' ')) > 2):
-        for word in title.strip(' '): 
+        for word in title.split(' '): 
             if word not in string:
                 return False
         return True
