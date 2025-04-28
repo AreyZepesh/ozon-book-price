@@ -319,6 +319,7 @@ async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         text = iterMsg( update, context, lstToMessage(bookButtons, maxlenght=750, maxline=20) )
         await update.callback_query.edit_message_text(text = text,
+                parse_mode=ParseMode.HTML, disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([buttons.get(PREV+NEXT), buttons.get(BACK+END)]))
     return BOOK
 
