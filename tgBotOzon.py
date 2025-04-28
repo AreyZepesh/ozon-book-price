@@ -127,7 +127,7 @@ def decConv(parent_func):
         async def wrapper(update, context):
             if update.callback_query:
                 if update.callback_query.data == BACK and context.user_data.get('Conversation'):
-                    print("! in decConv")
+                    # print("! in decConv")
                     return await parent_func(update, context) 
                 context.user_data['Conversation'] = True
             return await func(update, context)
@@ -139,7 +139,7 @@ def decConvParent(func):
     async def wrapper(update, context):
         if update.callback_query:
             if update.callback_query.data == BACK and context.user_data.get('Conversation'):
-                print("! in decConvParent")
+                # print("! in decConvParent")
                 await func(update, context)
                 #секция для удаления reply клавиатуры
                 if context.user_data.get("keyboardMessages"):
@@ -148,6 +148,9 @@ def decConvParent(func):
                     del context.user_data["keyboardMessages"]
                 if context.user_data.get('toDelete'):
                     del context.user_data['toDelete']
+
+                if context.user_data.get(MESS_ITER):
+                    del context.user_data[MESS_ITER]
                 context.user_data['Conversation'] = False
                 return CONV_END
         return await func(update, context)
@@ -289,7 +292,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ## BOOK
 @decConvParent
 async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     book_keys = [
         [InlineKeyboardButton("Cписок книг", callback_data=BOOK_LIST)],
         [InlineKeyboardButton("Добавить книгу", callback_data=ADD_BOOK)],
@@ -307,7 +310,7 @@ async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @decConv(cat_book)
 async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(f"Ищу данные", reply_markup=None)
     bookButtons = booksList()
@@ -320,7 +323,7 @@ async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return BOOK
 
 async def add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(f"Выбрано действие с книгой: {update.callback_query.data}", 
                                                   reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
@@ -341,8 +344,7 @@ async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
             book_id = context.user_data.get('toDelete')[0]
             title = database.getBookTitle(book_id)
             
-            # TODO работает, но на время разработки отключил
-            # database.delBook(book_id)
+            database.delBook(book_id)
 
             text = f"Книга {book_id}. {title} была стерта из базы!"
             await context.bot.delete_message(chat_id=update.effective_chat.id, 
@@ -350,7 +352,7 @@ async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.edit_message_text(chat_id=update.effective_chat.id, 
                                               message_id=context.user_data.get("toDelete")[1],
                                               text = text, reply_markup=None)
-            print(text)
+            # print(text)
             await context.bot.send_message(chat_id=update.effective_chat.id, text = "Что дальше?", 
                                                 reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
         elif update.message:
@@ -367,7 +369,7 @@ async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ## TXTLINK
 @decConvParent
 async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     txtlint_keys= [
         [InlineKeyboardButton("Получить данные по книге", callback_data=TL_ONE)],
         [InlineKeyboardButton("Получить данные по всем книгам", callback_data=TL_ALL)],
@@ -393,7 +395,7 @@ async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @decConv(cat_txtlint)
 async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
 
     text = iterMsg( update, context, lstToMessage(lastPricesList()) )
@@ -408,7 +410,7 @@ async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ## IMAGE
 async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     image_keys = [
         [InlineKeyboardButton("Таблицы с последними ценами", callback_data=IM_TAB)],
         [InlineKeyboardButton("Общий график всё время", callback_data=IM_UNION_GR)],
@@ -421,7 +423,7 @@ async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return IMAGE
 
 async def image_table(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
     await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
     # media = [InputMediaDocument(open(im, 'rb')) for im in getListFiles(0)]
@@ -436,7 +438,7 @@ async def image_table(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ## OTHER
 async def cat_other(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     # if context.user_data.get(MESS_ITER):
     #     del context.user_data[MESS_ITER]
     other_keys = [
