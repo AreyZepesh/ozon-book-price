@@ -198,7 +198,8 @@ def main():
         for data in dataList:
             addPriceToDB(data)
 
-        plots.plotPriceTable()
+        plots.plotPriceTable(sort_by_price=False)
+        plots.plotPriceTable(sort_by_price=True, suffix='Sorted')
 
 
 

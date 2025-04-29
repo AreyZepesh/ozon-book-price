@@ -118,11 +118,14 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
             plt.show()
         plt.close()
 
-def plotPriceTable(onefile=False, telegram_size = True, show=False, save=True):
+def plotPriceTable(onefile=False, telegram_size = True, sort_by_price = False, suffix = '', show=False, save=True):
     from matplotlib import pyplot as plt
     from database import getPriceStat
     if save:
         for file in getListFiles(0):
+                # TODO затычка, не уверен в необходимости, как и всей механики suffix
+                if suffix and (suffix not in os.path.basename(file)):
+                    continue
                 if os.path.exists(file):
                     os.remove(file)
     def _genTableData(statPrices: dict) -> tuple[list[list], list[list], str]:
@@ -259,7 +262,7 @@ def plotPriceTable(onefile=False, telegram_size = True, show=False, save=True):
         return plt
     
     
-    cells, cellsColor, dateText = _genTableData(getPriceStat())
+    cells, cellsColor, dateText = _genTableData(getPriceStat(sort_by_price=sort_by_price))
 
     if onefile:
         ln_to_page = len(cells)
@@ -270,7 +273,7 @@ def plotPriceTable(onefile=False, telegram_size = True, show=False, save=True):
     for ct in range(0, len(cells), ln_to_page):
         pl = _plotTable(cells[1*ct:ln_to_page+ct], cellsColor[1*ct:ln_to_page+ct], dateText)
         if save:
-            pl.savefig(f"{makeDir('./graphics')}/aBooksTable{str(ct+1).zfill(4)}.png")
+            pl.savefig(f"{makeDir('./graphics')}/aBooksTable{suffix}{str(ct+1).zfill(4)}.png")
         if show:
             pl.show()
         pl.close()

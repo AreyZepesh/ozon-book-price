@@ -178,32 +178,15 @@ def getPrices(book_id: int = None, lastdays: int = None, datetime_start = None, 
                     'typeSearch': row.typeSearch})
     return prices
 
-"""def getPriceStat(echo=False) -> list[dict]:
-    data = []
-    keys = ['book_id', 'book_title', 'last_date', 'last_price', 'prev_date', 'prev_priсe', 'min_price', 'avg_price']
-    with Session(autoflush=False, bind=models.getEngine(echo=echo)) as db:
-        last_date  = db.execute(text(f"SELECT MAX(datetime) FROM prices")).first()[0]
-        for row in db.execute(text("SELECT * FROM prices_view_min_avg")).all():
-            lst = list(row)
-            last_price = db.execute(text(f"SELECT MIN(price) FROM prices WHERE book_id = {lst[0]} AND datetime = '{last_date}'")).first()[0]
-            prev_date = db.execute(text(f"SELECT MAX(datetime) FROM prices WHERE book_id = {lst[0]} AND datetime < '{last_date}'")).first()[0]
-            prev_priсe = db.execute(text(f"SELECT MIN(price) FROM prices WHERE book_id = {lst[0]} AND datetime = '{prev_date}'")).first()[0]
-            author = db.execute(text(f'SELECT author FROM books WHERE id = {lst[0]}')).first()[0]
-            if author:
-                lst[1] = f"{author} | {lst[1]}"
-            lst.insert(2, last_date)
-            lst.insert(3, last_price)
-            lst.insert(4, prev_date)
-            lst.insert(5, prev_priсe)
-            lst[-1] = round(lst[-1])
-            data.append({k:v for k,v in zip(keys, lst)})
-    return data"""
-
 @models.inSession
-def getPriceStat(db=None) -> list[dict]:
+def getPriceStat(sort_by_price = False, db = None) -> list[dict]:
     """Выводит статистику по книгам: последняя цена и дата, минимальняя и средняя цены. 
+    sort_by_price - сортировка по последней цене
     Возвращает список словарей"""
-    data = db.execute(text(f"SELECT * FROM prices_stat")).all()
+    ord = ''
+    if sort_by_price:
+        ord = "ORDER BY last_price"
+    data = db.execute(text(f"SELECT * FROM prices_stat {ord}")).all()
     return [dict(item._mapping) for item in data]
 
 @models.inSession
