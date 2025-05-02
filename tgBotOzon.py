@@ -429,7 +429,8 @@ async def image_table(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
     # media = [InputMediaDocument(open(im, 'rb')) for im in getListFiles(0)]
     media = [InputMediaPhoto(open(im, 'rb')) for im in getListFiles(0)]
-    await context.bot.send_media_group(chat_id=update.effective_chat.id, media=media)
+    for rng in range(0, len(media), 10):
+        await context.bot.send_media_group(chat_id=update.effective_chat.id, media=media[1*rng:10+rng])
     # await context.bot.send_photo(chat_id=update.effective_chat.id, photo=open("./graphics/aBooksTable0.png", 'rb'), has_spoiler=True)
     # await context.bot.send_document(chat_id=update.effective_chat.id, document="./graphics/aBooksTable0.png")
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Вот фото, что дальше?", reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))

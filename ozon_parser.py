@@ -176,6 +176,7 @@ def main():
                 #     print(find)
 
                 if find is not None and find not in dataList:
+                    print(find)
                     dataList.append(find)
 
             except Exception as ex:
@@ -183,7 +184,8 @@ def main():
 
             # Для отладки
             # input("\n   >>>   Next")
-                
+        print()    
+        
     sleep(2)
     driver.quit()
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
