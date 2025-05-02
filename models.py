@@ -138,64 +138,83 @@ def createViewS(dbname: str) -> None:
                             FROM books
                                 INNER JOIN isbns ON books.id = isbns.book_id;
                         """))
-        db.execute(text("""CREATE VIEW IF NOT EXISTS prices_view AS
+        db.execute(text("""CREATE VIEW prices_view_all AS
                             SELECT books.id AS book_id,
-                            CASE
-                                WHEN books.author NOT NULL
-                                    THEN books.author || " | " || books.title
-                                WHEN books.author IS NULL
-                                    THEN books.title
-                            END AS book_title,
-                            datetime AS last_date, 
-                            price AS last_price, 
-                            article, typeSearch
+                                books.title,
+                                books.author,
+                                prices.datetime,
+                                prices.price,
+                                prices.article,
+                                prices.typeSearch
                             FROM prices
-                            LEFT JOIN books ON prices.book_id = books.id
-                            --WHERE book_id = 131
-                            WHERE prices.datetime = (SELECT MAX(datetime) FROM prices)
-                            GROUP BY book_id
+                                LEFT JOIN
+                                books ON books.id = prices.book_id
+                            ORDER BY prices.datetime DESC;
                        """))
-        db.execute(text("""CREATE VIEW IF NOT EXISTS prices_view_min_avg AS
+        db.execute(text("""CREATE VIEW prices_view_current AS
                             SELECT books.id AS book_id,
-                            books.title AS Title,
-                            MIN(price) AS min_price, 
-                            CAST(ROUND(AVG(price)) AS INTEGER) AS avg_price
-                            --AVG(price) AS avg_price
-                            FROM prices 
-                            LEFT JOIN books ON prices.book_id = books.id 
-                            WHERE prices.datetime < (SELECT MAX(prices.datetime) FROM prices)
-                            GROUP BY book_id
+                                CASE WHEN books.author NOT NULL THEN books.author || " | " || books.title WHEN books.author IS NULL THEN books.title END AS book_title,
+                                prices.datetime AS last_date,
+                                prices.price AS last_price,
+                                prices.article,
+                                prices.typeSearch
+                            FROM books
+                                LEFT JOIN
+                                prices ON prices.book_id = books.id AND 
+                                            prices.datetime = (SELECT MAX(datetime) FROM prices);
                        """))
-        db.execute(text("""CREATE VIEW IF NOT EXISTS prices_view_prev AS
+        db.execute(text("""CREATE VIEW prices_view_min_avg AS
                             SELECT books.id AS book_id,
-                            CASE
-                                WHEN books.author NOT NULL
-                                    THEN books.author || " | " || books.title
-                                WHEN books.author IS NULL
-                                    THEN books.title
-                            END AS book_title,
-                            MAX(datetime) AS prev_date, 
-                            price AS prev_price, 
-                            article, typeSearch
+                                books.title AS Title,
+                                MIN(price) AS min_price,
+                                CAST (ROUND(AVG(price) ) AS INTEGER) AS avg_price
                             FROM prices
-                            LEFT JOIN books ON prices.book_id = books.id
-                            --WHERE book_id = 131
-                            WHERE prices.datetime < (SELECT MAX(datetime) FROM prices)
-                            GROUP BY book_id
+                                LEFT JOIN
+                                books ON prices.book_id = books.id
+                            WHERE prices.datetime < (SELECT MAX(prices.datetime)FROM prices)
+                            GROUP BY book_id;
                        """))
-        db.execute(text("""CREATE VIEW IF NOT EXISTS prices_stat AS
-                            SELECT 
-                            prices_view.book_id,
-                            prices_view.book_title,
-                            prices_view.last_date,
-                            prices_view.last_price,
-                            prices_view_prev.prev_date,
-                            prices_view_prev.prev_price,
-                            prices_view_min_avg.min_price,
-                            prices_view_min_avg.avg_price
-                            FROM prices_view
-                            LEFT JOIN prices_view_prev ON prices_view_prev.book_id = prices_view.book_id
-                            LEFT JOIN prices_view_min_avg ON prices_view_min_avg.book_id = prices_view.book_id
+        db.execute(text("""CREATE VIEW prices_view_prev AS
+                            SELECT books.id AS book_id,
+                                CASE 
+                                    WHEN books.author NOT NULL THEN books.author || " | " || books.title 
+                                    WHEN books.author IS NULL THEN books.title 
+                                END AS book_title,
+                                _prices.datetime AS prev_date,
+                                _prices.price AS prev_price,
+                                _prices.article,
+                                _prices.typeSearch
+                            FROM books
+                                LEFT JOIN
+                                (SELECT book_id, MAX(datetime) AS datetime,
+                                        price, article, typeSearch
+                                    FROM prices
+                                    WHERE prices.datetime < (SELECT MAX(datetime) FROM prices)
+                                    GROUP BY book_id, typeSearch
+                                )
+                                AS _prices ON _prices.book_id = books.id;
+                       """))
+        db.execute(text("""CREATE VIEW prices_stat AS
+                            SELECT prices_view_current.book_id,
+                                prices_view_current.book_title,
+                                prices_view_current.last_date,
+                                MIN(prices_view_current.last_price) AS last_price,
+                                prices_view_prev.prev_date,
+                                MIN(prices_view_prev.prev_price) AS prev_price,
+                                prices_view_min_avg.min_price,
+                                prices_view_min_avg.avg_price
+                            FROM prices_view_current
+                                LEFT JOIN
+                                prices_view_prev USING (
+                                    book_id
+                                )
+                                LEFT JOIN
+                                prices_view_min_avg USING (
+                                    book_id
+                                )
+                            GROUP BY book_id
+                            ORDER BY prev_date IS NULL AND 
+                                    last_date IS NULL NULLS LAST;
                        """))
 
 def CreateDB(dbname = DEFAULT_DB, recreate=False, echo=False):

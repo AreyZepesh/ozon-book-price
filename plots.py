@@ -118,7 +118,7 @@ def plotPriceByBook(book_id = 0, datetime_start=None, datetime_stop=None, show=F
             plt.show()
         plt.close()
 
-def plotPriceTable(onefile=False, telegram_size = True, sort_by_price = False, suffix = '', show=False, save=True):
+def plotPriceTable(onefile=False, telegram_size = True, sort_by_price = False, not_null = False, suffix = '', show=False, save=True):
     from matplotlib import pyplot as plt
     from database import getPriceStat
     if save:
@@ -262,7 +262,7 @@ def plotPriceTable(onefile=False, telegram_size = True, sort_by_price = False, s
         return plt
     
     
-    cells, cellsColor, dateText = _genTableData(getPriceStat(sort_by_price=sort_by_price))
+    cells, cellsColor, dateText = _genTableData(getPriceStat(sort_by_price=sort_by_price, not_null = not_null))
 
     if onefile:
         ln_to_page = len(cells)
