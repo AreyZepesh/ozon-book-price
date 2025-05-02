@@ -201,7 +201,7 @@ def main():
             addPriceToDB(data)
 
         plots.plotPriceTable(sort_by_price=False)
-        plots.plotPriceTable(sort_by_price=True, suffix='Sorted')
+        #plots.plotPriceTable(sort_by_price=True, suffix='Sorted')
 
 
 
