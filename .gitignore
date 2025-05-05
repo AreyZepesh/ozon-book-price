@@ -7,3 +7,4 @@ test*.*
 *.env
 _схема.jpg
 *.zip
+_sample.py

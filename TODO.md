@@ -45,3 +45,23 @@ getDriver.py >>> тут пока все норм, его я обновлял д�
 
 КОММЕНТ:
 строка поиска книжек https://ozon.kz/category/knigi-16500/?sorting=price&text=
+
+советы gpt
+mybot/
+├── __init__.py
+├── main.py                 # Точка входа: создание Application и запуск
+├── config.py               # Переменные окружения, настройки, константы
+├── common.py               # Общие функции, итераторы, декораторы
+├── handlers/               # Категории / диалоги
+│   ├── __init__.py
+│   ├── category_books.py   # Был cBook
+│   ├── category_image.py   # Был cImage
+│   ├── category_txtlink.py # Был cTxtLink
+│   └── ...                 # Будущие категории
+
+
+2. Упрощение del_book:
+
+В текущем виде там немного дублирования — особенно в блоке, где await context.bot.delete_message(...) и edit_message_text(...). Также много проверок, которые можно чуть упростить логически.
+
+Предложение: вынести часть логики в отдельные функции, или хотя бы добавить больше промежуточных переменных (например, toDelete = context.user_data.get('toDelete')).
