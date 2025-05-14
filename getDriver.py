@@ -1,20 +1,38 @@
 from selenium_stealth import stealth
 import undetected_chromedriver as uc
+from time import sleep
 
 def getDriver(headless=False, version_main = None):
-    # опции нужны для линукс версии, особенно без гпу и сандбокса
-    options = uc.ChromeOptions()
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-extensions") #
-    options.add_argument("--disable-application-cache") #
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-setuid-sandbox") #
-    options.add_argument("--disable-dev-shm-usage") #
+    driver = None
+    last_exception = None
 
-    driver = uc.Chrome(headless=headless, options=options, 
-                       version_main = version_main,
-                       )
+    for attempt in range(5):
+        try:
+            options = uc.ChromeOptions()
+            options.add_argument("--window-size=1920,1080")
+            options.add_argument("--disable-extensions") #
+            options.add_argument("--disable-application-cache") #
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-setuid-sandbox") #
+            options.add_argument("--disable-dev-shm-usage") #
+            # опции нужны для линукс версии, особенно без гпу и сандбокса
+            
+            sleep(attempt*5)
+
+            driver = uc.Chrome(headless=headless, options=options, 
+                            version_main = version_main,
+                            )
+            
+        except Exception as ex:
+            last_exception = ex
+            print(f"Try {attempt+1}: \n {ex} \n\n")
+            continue
+        else:
+            break
+    
+    if driver is None:
+        raise last_exception
     
     # Эти параменты теоретически могут отличаться на разных системах
     # При этом - те же параментры прекрастно гуглятся, поэтому - оставлю
