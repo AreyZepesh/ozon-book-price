@@ -2,7 +2,10 @@ from selenium_stealth import stealth
 import undetected_chromedriver as uc
 from time import sleep
 
-def getDriver(headless=False, version_main = None):
+from datetime import datetime as dt
+import os
+
+def getDriver(headless=False, version_main = None, testMode = False):
     driver = None
     last_exception = None
 
@@ -16,6 +19,11 @@ def getDriver(headless=False, version_main = None):
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-setuid-sandbox") #
             options.add_argument("--disable-dev-shm-usage") #
+            # опции для отладки
+            options.add_argument("--enable-logging") #
+            options.add_argument("--v=") #
+            options.add_argument(f"--log-file={os.getcwd()}/logs/{dt.now().strftime("%Y-%m-%d  %H-%M")}chromium.log") #
+            # options.add_argument(f"--log-file=/home/aaz/ozon-book-price/logs/{dt.now().strftime("%Y-%m-%d  %H-%M")}chromium.log") #
             # опции нужны для линукс версии, особенно без гпу и сандбокса
             
             sleep(attempt*5)
@@ -49,7 +57,7 @@ def getDriver(headless=False, version_main = None):
     # Скрываем работу селениум, юзерагента нагуглил
     stealth(driver = driver,
             user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                   'Chrome/83.0.4103.53 Safari/537.36',
+                   'Chrome/136.0.4103.53 Safari/537.36',
             languages = ["ru-RU", "ru"],
             vendor = "Google Inc.",
             platform = "Win32",
