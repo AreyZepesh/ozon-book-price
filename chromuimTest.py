@@ -16,4 +16,6 @@ def main():
     driver.quit()
 
 if __name__  == '__main__':
-    main()
+    for r in range (1):
+        main()
+        # sleep(10)
