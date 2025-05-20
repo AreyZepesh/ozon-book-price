@@ -2,45 +2,44 @@ from selenium_stealth import stealth
 import undetected_chromedriver as uc
 from time import sleep
 
-from datetime import datetime as dt
-import os
+# from datetime import datetime as dt
+# import os
 
 def getDriver(headless=False, version_main = None, testMode = False):
     driver = None
     last_exception = None
 
-    for attempt in range(5):
+    for attempt in range(3):
         try:
             options = uc.ChromeOptions()
-            if headless:
-                options.add_argument("--headless=new")
+            # if headless:
+            #     options.add_argument("--headless=new")
             options.add_argument("--window-size=1920,1080")
-            options.add_argument("--disable-extensions") #
-            options.add_argument("--disable-application-cache") #
+            # options.add_argument("--disable-extensions") #
+            # options.add_argument("--disable-application-cache") #
             options.add_argument("--disable-gpu")
             options.add_argument("--no-sandbox")
-            options.add_argument("--disable-setuid-sandbox") #
-            options.add_argument("--disable-dev-shm-usage") #
+            # options.add_argument("--disable-setuid-sandbox") #
+            # options.add_argument("--disable-dev-shm-usage") #
 
-            options.add_argument("--remote-debugging-port=0") 
-            options.add_argument("--disable-software-rasterize") 
-
-            options.add_argument(f"–-user-data-dir={os.getcwd()}/tmp") 
+            # options.add_argument("--remote-debugging-port=0") #
+            # options.add_argument("--disable-software-rasterize") #
+            # Ниже сомнительная опция
+            # options.add_argument(f"–-user-data-dir={!}") ##
             # опции для отладки
-            options.add_argument("--enable-logging") #
-            options.add_argument("--v=") #
-            options.add_argument(f"--log-file={os.getcwd()}/logs/{dt.now().strftime("%Y-%m-%d  %H-%M")}chromium.log") #
-            # options.add_argument(f"--log-file=/home/aaz/ozon-book-price/logs/{dt.now().strftime("%Y-%m-%d  %H-%M")}chromium.log") #
+            # options.add_argument("--enable-logging") #
+            # options.add_argument("--v=1") #
+            # options.add_argument(f"--log-file={os.getcwd()}/logs/{dt.now().strftime("%Y-%m-%d  %H-%M")}chromium.log") #
             # опции нужны для линукс версии, особенно без гпу и сандбокса
             
-            sleep(attempt*3)
+            sleep(attempt*5)
 
             driver = uc.Chrome(
-                # headless=headless, 
+                headless=headless, 
                 options=options, 
-                            version_main = version_main,
+                version_main = version_main,
                             )
-            
+            # print(driver.options.arguments)
         except Exception as ex:
             last_exception = ex
             print(f"Try {attempt+1}: \n {ex} \n\n")
