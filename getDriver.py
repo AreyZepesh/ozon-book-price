@@ -12,6 +12,8 @@ def getDriver(headless=False, version_main = None, testMode = False):
     for attempt in range(5):
         try:
             options = uc.ChromeOptions()
+            if headless:
+                options.add_argument("--headless=new")
             options.add_argument("--window-size=1920,1080")
             options.add_argument("--disable-extensions") #
             options.add_argument("--disable-application-cache") #
@@ -19,6 +21,11 @@ def getDriver(headless=False, version_main = None, testMode = False):
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-setuid-sandbox") #
             options.add_argument("--disable-dev-shm-usage") #
+
+            options.add_argument("--remote-debugging-port=0") 
+            options.add_argument("--disable-software-rasterize") 
+
+            options.add_argument(f"–-user-data-dir={os.getcwd()}/tmp") 
             # опции для отладки
             options.add_argument("--enable-logging") #
             options.add_argument("--v=") #
@@ -26,9 +33,11 @@ def getDriver(headless=False, version_main = None, testMode = False):
             # options.add_argument(f"--log-file=/home/aaz/ozon-book-price/logs/{dt.now().strftime("%Y-%m-%d  %H-%M")}chromium.log") #
             # опции нужны для линукс версии, особенно без гпу и сандбокса
             
-            sleep(attempt*5)
+            sleep(attempt*3)
 
-            driver = uc.Chrome(headless=headless, options=options, 
+            driver = uc.Chrome(
+                # headless=headless, 
+                options=options, 
                             version_main = version_main,
                             )
             
