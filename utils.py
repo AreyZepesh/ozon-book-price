@@ -389,6 +389,8 @@ def getCodeFromEmail(timeH=0.5) -> str:
         if dtnow - mail[0] > timedelta(hours=timeH):
             continue
         for row in mail[1:]:
+            if "Оповещение системы безопасности" in row:
+                continue
             if '<!DOCTYPE html' in row:
                 return  _getCodeFromHTML(row)
             else:
