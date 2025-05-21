@@ -140,7 +140,7 @@ def main():
         auth_msg = 'Начало попытки аутентификации'
         authToOzon(driver)
         try:
-            driver.get(baseURL)
+            # driver.get(baseURL)
             driver.find_element(By.XPATH, "//span[contains(text(), 'Кабинет')]")
             auth_msg = "Парсим под логином"
         except:

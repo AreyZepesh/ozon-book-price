@@ -34,12 +34,12 @@ def getDriver(headless=False, version_main = None, testMode = False):
             
             sleep(attempt*5)
 
-            browser_executable_path = None
+            # browser_executable_path = None
             # driver_executable_path = None
-            if os.path.exists('./chrome-linux64/chrome'):
-                browser_executable_path = './chrome-linux64/chrome'
-            if os.path.exists('./chrome-win64/chrome.exe'):
-                browser_executable_path = './chrome-win64/chrome.exe'
+            # if os.path.exists('./chrome-linux64/chrome'):
+            #     browser_executable_path = './chrome-linux64/chrome'
+            # if os.path.exists('./chrome-win64/chrome.exe'):
+            #     browser_executable_path = './chrome-win64/chrome.exe'
             # if os.path.exists('./chromedriver-linux64/chromedriver'):
             #     driver_executable_path = './chromedriver-linux64/chromedriver'
 
@@ -48,7 +48,7 @@ def getDriver(headless=False, version_main = None, testMode = False):
                 options=options, 
                 version_main = version_main,
                 # driver_executable_path = driver_executable_path,
-                browser_executable_path = browser_executable_path,
+                # browser_executable_path = browser_executable_path,
                             )
             # print(driver.options.arguments)
         except Exception as ex:
