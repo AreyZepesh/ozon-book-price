@@ -140,6 +140,7 @@ def main():
         auth_msg = 'Начало попытки аутентификации'
         authToOzon(driver)
         try:
+            # driver.get(baseURL)
             driver.find_element(By.XPATH, "//span[contains(text(), 'Кабинет')]")
             auth_msg = "Парсим под логином"
         except:
@@ -176,6 +177,7 @@ def main():
                 #     print(find)
 
                 if find is not None and find not in dataList:
+                    print(find)
                     dataList.append(find)
 
             except Exception as ex:
@@ -183,7 +185,8 @@ def main():
 
             # Для отладки
             # input("\n   >>>   Next")
-                
+        print()    
+        
     sleep(2)
     driver.quit()
     print("\n!!!---   ПАРСИНГ ЗАВЕРШЕН   ---!!!\n")
@@ -199,7 +202,7 @@ def main():
             addPriceToDB(data)
 
         plots.plotPriceTable(sort_by_price=False)
-        plots.plotPriceTable(sort_by_price=True, suffix='Sorted')
+        #plots.plotPriceTable(sort_by_price=True, suffix='Sorted')
 
 
 

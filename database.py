@@ -179,14 +179,17 @@ def getPrices(book_id: int = None, lastdays: int = None, datetime_start = None, 
     return prices
 
 @models.inSession
-def getPriceStat(sort_by_price = False, db = None) -> list[dict]:
+def getPriceStat(sort_by_price = False, not_null = False, db = None) -> list[dict]:
     """Выводит статистику по книгам: последняя цена и дата, минимальняя и средняя цены. 
-    sort_by_price - сортировка по последней цене
+    sort_by_price - сортировка по последней цене.
+    not_null - не пустые цены.
     Возвращает список словарей"""
     ord = ''
+    if not_null:
+        ord += " WHERE last_price IS NOT NULL AND prev_price IS NOT NULL"
     if sort_by_price:
-        ord = "ORDER BY last_price"
-    data = db.execute(text(f"SELECT * FROM prices_stat {ord}")).all()
+        ord = " ORDER BY last_price NULLS LAST"
+    data = db.execute(text(f"SELECT * FROM prices_stat{ord}")).all()
     return [dict(item._mapping) for item in data]
 
 @models.inSession
