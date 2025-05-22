@@ -1,12 +1,9 @@
-from . import main
-from . import common
-from . import c_Book
-from . import c_TxtLink
-from . import c_Image
-from . import c_Other
-run = main.run()
+from .main import run
 
-__all__ = ["run"]
+# from . import main
+# from . import common
+# run = main.run
+# __all__ = ["run"]
 
 # Импорт из единого файла, на всякий случай
 # import os, sys

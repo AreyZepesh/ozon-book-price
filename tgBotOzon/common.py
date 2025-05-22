@@ -1,5 +1,3 @@
-
-
 import os, sys
 # os.chdir( os.path.abspath( os.path.dirname( os.path.dirname(__file__) ) ) )
 # sys.path.append( os.getcwd() )
@@ -31,7 +29,9 @@ from telegram.ext import (
     )
 
 
+# ограничение пользователей
 admins = filters.User()
+admins.add_user_ids(794933751)
 
 CONV_END = ConversationHandler.END
 END, BEGIN, BACK, PREV, NEXT, MESS_ITER = ["sys"+r for r in map(str,range(6))]
@@ -217,6 +217,7 @@ def lstToMessage(data: list[str], maxlenght:int = 1000, maxline:int = 100, sep: 
         messages.append(text)
         return messages
         
+# async?
 def iterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE, listMsg: list) -> str:
     if not context.user_data.get("last_iter"):
         context.user_data["last_iter"] = update.callback_query.data
@@ -288,5 +289,5 @@ async def book_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 if __name__ == '__main__':
     # os.chdir( os.path.abspath( os.path.dirname( os.path.dirname(__file__) ) ) )
     # sys.path.append( os.getcwd() )
-    print(globals().keys())
+    # print(globals().keys())
     pass

@@ -1,5 +1,5 @@
 # from .common import *
-from .common import (
+from ..common import (
         getEnv, dictByKeys, getListFiles,
         database, sys, logging, asyncio,
         Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, 
