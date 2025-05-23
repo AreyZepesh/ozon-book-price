@@ -1,18 +1,17 @@
 
-from ..common import (
+from .common import (
         dictByKeys, getListFiles,
         database, logging, asyncio,
         Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, 
         InlineKeyboardButton, InputMediaPhoto, InputMediaDocument, ParseMode,
         Message, ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler,
         ConversationHandler, CallbackQueryHandler, filters, 
-        admins, buttons, 
-        CONV_END, END, BEGIN, BACK, PREV, NEXT, MESS_ITER, CATEGORY, BOOK, 
-        TXTLINK, IMAGE, OTHER, BOOK_LIST, ADD_BOOK, DEL_BOOK, ADD_ISBN, 
-        DEL_ISBN, ADD_ARTICLE, DEL_ARTICLE, B_CSV, TL_ALL, TL_ONE, IM_TAB, 
-        IM_UNION_GR, IM_ONE_GR, IM_ALL_GR, NO_BOOK, 
+        buttons, 
+        CONV_END, END, BEGIN, BACK, PREV, NEXT, MESS_ITER, 
+        CATEGORY, BOOK, TXTLINK, IMAGE, OTHER, 
+        NO_BOOK, 
         MessageIter, iterMsg, myConvHandler, decConv, decConvParent, booksList, 
-        lastPricesList, lstToMessage, book_buttons    
+        lastPricesList, lstToMessage, book_buttons   
                     )
 
 @decConvParent
@@ -90,6 +89,8 @@ async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                               reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
         del context.user_data['toDelete']
     return BOOK
+
+BOOK_LIST, ADD_BOOK, DEL_BOOK, ADD_ISBN, DEL_ISBN, ADD_ARTICLE, DEL_ARTICLE, B_CSV = ["book"+r for r in map(str,range(8))]
 
 book_callback = [
     myConvHandler(BOOK_LIST, BOOK, book_list, forKeyboard = 'inline'),

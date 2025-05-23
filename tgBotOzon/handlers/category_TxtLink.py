@@ -1,18 +1,17 @@
 # from .common import *
-from ..common import (
+from .common import (
         dictByKeys, getListFiles,
         database, logging, asyncio,
         Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, 
         InlineKeyboardButton, InputMediaPhoto, InputMediaDocument, ParseMode,
         Message, ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler,
         ConversationHandler, CallbackQueryHandler, filters, 
-        admins, buttons, 
-        CONV_END, END, BEGIN, BACK, PREV, NEXT, MESS_ITER, CATEGORY, BOOK, 
-        TXTLINK, IMAGE, OTHER, BOOK_LIST, ADD_BOOK, DEL_BOOK, ADD_ISBN, 
-        DEL_ISBN, ADD_ARTICLE, DEL_ARTICLE, B_CSV, TL_ALL, TL_ONE, IM_TAB, 
-        IM_UNION_GR, IM_ONE_GR, IM_ALL_GR, NO_BOOK, 
+        buttons, 
+        CONV_END, END, BEGIN, BACK, PREV, NEXT, MESS_ITER, 
+        CATEGORY, BOOK, TXTLINK, IMAGE, OTHER, 
+        NO_BOOK, 
         MessageIter, iterMsg, myConvHandler, decConv, decConvParent, booksList, 
-        lastPricesList, lstToMessage, book_buttons    
+        lastPricesList, lstToMessage, book_buttons
                     )
 
 ## TXTLINK
@@ -55,6 +54,8 @@ async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     
     return TXTLINK
+
+TL_ALL, TL_ONE = ["textlink"+r for r in map(str,range(2))]
 
 txtlink_callback = [
     myConvHandler(TL_ONE, TXTLINK, txtlint_one, forKeyboard = 'reply'),

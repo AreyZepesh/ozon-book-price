@@ -1,18 +1,17 @@
 # from .common import *
-from ..common import (
+from .common import (
         dictByKeys, getListFiles,
         database, logging, asyncio,
         Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, 
         InlineKeyboardButton, InputMediaPhoto, InputMediaDocument, ParseMode,
         Message, ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler,
         ConversationHandler, CallbackQueryHandler, filters, 
-        admins, buttons, 
-        CONV_END, END, BEGIN, BACK, PREV, NEXT, MESS_ITER, CATEGORY, BOOK, 
-        TXTLINK, IMAGE, OTHER, BOOK_LIST, ADD_BOOK, DEL_BOOK, ADD_ISBN, 
-        DEL_ISBN, ADD_ARTICLE, DEL_ARTICLE, B_CSV, TL_ALL, TL_ONE, IM_TAB, 
-        IM_UNION_GR, IM_ONE_GR, IM_ALL_GR, NO_BOOK, 
+        buttons, 
+        CONV_END, END, BEGIN, BACK, PREV, NEXT, MESS_ITER, 
+        CATEGORY, BOOK, TXTLINK, IMAGE, OTHER, 
+        NO_BOOK, 
         MessageIter, iterMsg, myConvHandler, decConv, decConvParent, booksList, 
-        lastPricesList, lstToMessage, book_buttons    
+        lastPricesList, lstToMessage, book_buttons     
                     )
 
 ## IMAGE
@@ -42,6 +41,8 @@ async def image_table(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Вот фото, что дальше?", reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
     # await update.callback_query.edit_message_text("Что делать будем?", reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
     return IMAGE
+
+IM_TAB, IM_UNION_GR, IM_ONE_GR, IM_ALL_GR = ["image"+r for r in map(str,range(4))]
 
 image_callback = [
     CallbackQueryHandler(image_table, pattern=f"^{IM_TAB}$"),
