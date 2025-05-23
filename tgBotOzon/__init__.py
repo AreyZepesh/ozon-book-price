@@ -1,4 +1,4 @@
-from .main import run
+from .__main__ import run
 
 # from . import main
 # from . import common
