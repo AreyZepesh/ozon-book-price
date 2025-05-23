@@ -397,22 +397,22 @@ def getCodeFromEmail(timeH=0.5) -> str:
                 return re.search( '[0-9]{6}', normalizeStr(row) ).group()
 
 
-def getListFiles(searchtype: int, path: str = './graphics', filetype: str = '.png') -> list[str]:
+def getListFiles(searchtype: int = None, path: str = './graphics', filetype: str = '.png') -> list[str]:
     """0 - Таблицы цен, 
     1 - Общий график, 
     2 - отдельные графики по книгам.
     Любое другое - вернет все filetype."""
     import os
-    images = os.listdir(path)
-    images.sort()
+    files = os.listdir(path)
+    files.sort()
     if searchtype == 0:
-        return [f"{path}/{image}" for image in images if ("aBooksTable" in image) and (filetype in image)]
+        return [f"{path}/{file}" for file in files if ("aBooksTable" in file) and (filetype in file)]
     elif searchtype == 1:
-        return [f"{path}/{image}" for image in images if ("allbooks" in image) and (filetype in image)]
+        return [f"{path}/{file}" for file in files if ("allbooks" in file) and (filetype in file)]
     elif searchtype == 2:
-        return [f"{path}/{image}" for image in images if ('b' == image[0]) and ("allbooks" not in image) and ("aBooksTable" not in image) and (filetype in image)]
+        return [f"{path}/{file}" for file in files if ('b' == file[0]) and ("allbooks" not in file) and ("aBooksTable" not in file) and (filetype in file)]
     else:
-        return [f"{path}/{image}" for image in images if filetype in image]
+        return [f"{path}/{file}" for file in files if filetype in file]
 
 def main():
     pass

@@ -16,7 +16,7 @@ from .common import (
 
 ## IMAGE
 async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     image_keys = [
         [InlineKeyboardButton("Таблицы с последними ценами", callback_data=IM_TAB)],
         [InlineKeyboardButton("Общий график всё время", callback_data=IM_UNION_GR)],
@@ -29,7 +29,7 @@ async def cat_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return IMAGE
 
 async def image_table(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
     await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
     # media = [InputMediaDocument(open(im, 'rb')) for im in getListFiles(0)]

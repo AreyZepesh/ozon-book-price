@@ -16,7 +16,7 @@ from .common import (
 
 @decConvParent
 async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     book_keys = [
         [InlineKeyboardButton("Cписок книг", callback_data=BOOK_LIST)],
         [InlineKeyboardButton("Добавить книгу", callback_data=ADD_BOOK)],
@@ -34,7 +34,7 @@ async def cat_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @decConv(cat_book)
 async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(f"Ищу данные", reply_markup=None)
     bookButtons = booksList()
@@ -48,7 +48,7 @@ async def book_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return BOOK
 
 async def add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(f"Выбрано действие с книгой: {update.callback_query.data}", 
                                                   reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))

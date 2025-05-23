@@ -19,8 +19,8 @@ from . import category_Image
 from . import category_Other
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.callback_query:
-        print(update.callback_query.data)
+    # if update.callback_query:
+    #     print(update.callback_query.data)
     cat_keys = [
         [InlineKeyboardButton('Книги в базе', callback_data=BOOK)], 
         [InlineKeyboardButton('Ссылки и цены', callback_data=TXTLINK)],

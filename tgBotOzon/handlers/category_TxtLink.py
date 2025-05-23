@@ -17,7 +17,7 @@ from .common import (
 ## TXTLINK
 @decConvParent
 async def cat_txtlint(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     txtlint_keys= [
         [InlineKeyboardButton("Получить данные по книге", callback_data=TL_ONE)],
         [InlineKeyboardButton("Получить данные по всем книгам", callback_data=TL_ALL)],
@@ -43,7 +43,7 @@ async def txtlint_one(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @decConv(cat_txtlint)
 async def txtlint_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
+    # print(update.callback_query.data)
     await update.callback_query.answer()
 
     text = iterMsg( update, context, lstToMessage(lastPricesList()) )

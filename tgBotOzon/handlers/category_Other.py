@@ -16,25 +16,32 @@ from .common import (
 
 ## OTHER
 async def cat_other(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.callback_query.data)
-    # if context.user_data.get(MESS_ITER):
-    #     del context.user_data[MESS_ITER]
+    # print(update.callback_query.data)
     other_keys = [
-        [InlineKeyboardButton("Получить последний лог", callback_data=str(CATEGORY))],
+        [InlineKeyboardButton("Последний лог", callback_data=str(OTHER_LOG))],
+        # [InlineKeyboardButton("TODO", callback_data=str(OTHER_TODO))],
         buttons.get(BEGIN+END)
         # bottomButtons
         ]
     await update.callback_query.answer()
-    await update.callback_query.edit_message_text("Действия c", reply_markup=InlineKeyboardMarkup(other_keys))
-    return CATEGORY
+    await update.callback_query.edit_message_text("Прочии действия", reply_markup=InlineKeyboardMarkup(other_keys))
+    return OTHER
 
 async def sendLog(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    await update.callback_query.answer()
+    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.effective_message.id)
+    logmedia = [ InputMediaDocument( open( getListFiles(path='./logs', filetype=".txt")[-1] ) ) ]
+    await context.bot.send_media_group(chat_id=update.effective_chat.id, media=logmedia)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Вот лог, что дальше?", 
+                                                  reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)])
+                                                  )
 
 OTHER_LOG, OTHER_TODO = ["textlink"+r for r in map(str,range(2))]
 
 other_callback = [
-    # CallbackQueryHandler(sendLog, pattern=f'^{}$'),
+    CallbackQueryHandler(sendLog, pattern=f'^{OTHER_LOG}$'),
+    # CallbackQueryHandler(cat_other, pattern=f'^{OTHER_TODO}$'),
+    CallbackQueryHandler(cat_other, pattern=f'^{BACK}$'),
     ]
 
 if __name__ == '__main__':
