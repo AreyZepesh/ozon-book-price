@@ -1,6 +1,6 @@
 */*
+**/__pycache__/*
 !tgBotOzon/*
-*/__pycache__/*
 .comments
 test*.*
 *.db
