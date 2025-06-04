@@ -27,11 +27,13 @@ def normalizeStr(string: str) -> str:
     """Нормализует данные в строке:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
-    string = string.replace('\t', ' ')
-    string = string.replace('\r\n', ' ')
-    string = string.replace('\n', ' ')
-    string = string.replace('\u2009', ' ')
-    string = string.replace(' ', ' ') 
+    import re
+    string = re.sub("[^a-zA-Zа-яёА-ЯЁ0-9,.:!?+-]", " ", string)
+    # string = string.replace('\t', ' ')
+    # string = string.replace('\r\n', ' ')
+    # string = string.replace('\n', ' ')
+    # string = string.replace('\u2009', ' ')
+    # string = string.replace(' ', ' ') 
     while '  ' in string:
         string = string.replace('  ', ' ')
     string = string.strip()
@@ -94,7 +96,7 @@ def strFromComparison(string: str) -> str:
     import re
     string = re.sub("ё", "е", string)
     string = re.sub("Ё", "Е", string)
-    string = re.sub("[^a-zA-Zа-яА-Я0-9 ]", " ", string)
+    string = re.sub("[^a-zA-Zа-яА-Я0-9]", " ", string)
     string = normalizeStr(string)
     string = string.lower()
     return string

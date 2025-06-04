@@ -2,7 +2,7 @@
 # os.chdir( os.path.abspath( os.path.dirname( os.path.dirname(__file__) ) ) )
 # sys.path.append( os.getcwd() )
 
-from utils import getEnv, dictByKeys, getListFiles
+from utils import getEnv, dictByKeys, getListFiles, normalizeStr
 import database
 import asyncio
 import logging
@@ -127,43 +127,34 @@ def iterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE, listMsg: list) -
     return text
 
 ## Conversation
-def myConvHandler(input_pattern, state, callback, forKeyboard: str = 'both') -> ConversationHandler:
-    """
-    input_pattern - он и есть entry_points для ConversationHandler;\n
-    state - обычно state категории: статус, возвращаемой входной и обрабатываемой функцией, и при завершении диалога;\n
-    callback - вызываемая функция;\n
-    forKeyboard: может быть str['inline'|'reply'|'both'].\n
-    Используй декораторы: 
-    @decConv(_parent_func_) для целевой функции и 
-    @decConvParent для функции родителя
-    """
-    # Устарело, но если проблемы будут с декоратором, то:
-    # state - статус, возвращаемой входной и обрабатываемой функцией, так же возращает в него при завершении диалога;\n
-    # callback - обрабатываемая функция, не забывать добавлять в неё  CONV_END
-    # Рекомендую: из callback добавить условие (сразу после update.callback_query.answer):
-    #     'if update.callback_query.data == BACK:
-    #         return await _parent_func_(update, context)' 
-    # и в _parent_func_ добавить (сразу после update.callback_query.answer и сообщения):
-    #     'if update.callback_query.data == BACK:
-    #         return CONV_END'
-    state_handlers = []
-    fallback_handlers = [CallbackQueryHandler(callback, pattern=f"^{BACK}$")]
-    # если вдруг после первого вызова повторное не получится вызвать, добавь в паттерн выше еще и input_pattern, для диагностики
-    if forKeyboard == 'both' or forKeyboard == 'reply':
-        state_handlers.append(MessageHandler(filters.Regex(r'^\d+'), callback))
-        state_handlers.append(MessageHandler(filters.Regex(f'^{NO_BOOK}$'), callback))
-        fallback_handlers.append(MessageHandler(None, callback))
-    if forKeyboard == 'both' or forKeyboard == 'inline':
-        state_handlers.append(CallbackQueryHandler(callback, pattern=f"^{PREV}|{NEXT}$"))
 
-    list_conv_hadler = ConversationHandler(
-        entry_points = [CallbackQueryHandler(callback, pattern=f"^{input_pattern}$")],
-        states = {state: state_handlers},
-        fallbacks = fallback_handlers,
+def myConvHandler(input_pattern, state, state_callback, state_handlers: list[MessageHandler|CallbackQueryHandler] = [], forKeyboard: str = None, extra_states: dict = {}) -> ConversationHandler:
+    """Создает ConversationHandler, впервую очередь для итерируемых сообщений и списков кнопок. Терминологию страюсь использовать как в ConversationHandler\n
+    input_pattern - паттерн (значение callback_data у кнопки, которая начинает диалог) для entry_points в ConversationHandler;\n
+    state - обычно state категории: статус, возвращаемой входной и обрабатываемой функцией, и при завершении диалога;\n
+    state_handlers - список хандлеров, обрабатываемых дополнительно. Отрабатываются первыми.\n
+    callback - вызываемая функция;\n
+    forKeyboard - может быть str['inline'|'reply'|'both']. Или None\n
+    extra_states - расширение словаря states в ConversationHandler, для дополнительных состояний и хандлеров.
+
+    Используй декораторы: 
+    @decConv(parent_func) для целевой функции и 
+    '@decConvParent' для функции родителя
+    """
+    if forKeyboard == 'both' or forKeyboard == 'reply':
+        state_handlers.append(MessageHandler(filters.Regex(r'^\d+'), state_callback))
+    if forKeyboard == 'both' or forKeyboard == 'inline':
+        state_handlers.append(CallbackQueryHandler(state_callback, pattern=f"^{PREV}|{NEXT}$"))
+
+    entry_handler = CallbackQueryHandler(state_callback, pattern=f"^{input_pattern}$")
+    conv_hadler = ConversationHandler(
+        entry_points = [entry_handler],
+        states = {state: state_handlers, **extra_states},
+        fallbacks = [CallbackQueryHandler(state_callback, pattern=f"^{BACK}$"), MessageHandler(None, state_callback)],
         allow_reentry = True,
         map_to_parent= {CONV_END: state}
         )
-    return list_conv_hadler
+    return conv_hadler
 
 def decConv(parent_func):
     """Декоратор функции, исполняемой в myConvHandler, требует указание родительской функции. Для завершения ConversationHandler"""
@@ -181,6 +172,8 @@ def decConv(parent_func):
 def decConvParent(func):
     """Декоратор родительской функции, исполняемой в myConvHandler. Для завершения ConversationHandler"""
     async def wrapper(update, context):
+        if context.user_data.get('toDelete'):
+            del context.user_data['toDelete']
         if update.callback_query:
             if update.callback_query.data == BACK and context.user_data.get('Conversation'):
                 # print("! in decConvParent")
@@ -190,9 +183,6 @@ def decConvParent(func):
                     await context.bot.delete_message(chat_id=update.effective_chat.id, 
                                                       message_id=context.user_data.get("keyboardMessages")[0])
                     del context.user_data["keyboardMessages"]
-                if context.user_data.get('toDelete'):
-                    del context.user_data['toDelete']
-
                 if context.user_data.get(MESS_ITER):
                     del context.user_data[MESS_ITER]
                 context.user_data['Conversation'] = False
@@ -286,14 +276,14 @@ async def book_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             mes = await context.bot.send_message(chat_id=update.effective_chat.id, 
                     text="По указанным данным не найдена книга. Пожалуйста, выберите книгу из списка",
                     reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
-            if context.user_data.get("keyboardMessages"):
-                await context.bot.delete_message(chat_id=update.effective_chat.id, 
-                                                 message_id=context.user_data.get("keyboardMessages").pop(-1) )
-                context.user_data.get("keyboardMessages").append(mes.id) 
+            # if context.user_data.get("keyboardMessages"):
+            await context.bot.delete_message(chat_id=update.effective_chat.id, 
+                                                message_id=context.user_data.get("keyboardMessages").pop(-1) )
+            context.user_data.get("keyboardMessages").append(mes.id) #
         else:
-            if context.user_data.get("keyboardMessages"):
-                await context.bot.delete_messages(chat_id=update.effective_chat.id, message_ids=context.user_data.get("keyboardMessages"))
-                del context.user_data["keyboardMessages"]
+            # if context.user_data.get("keyboardMessages"):
+            await context.bot.delete_messages(chat_id=update.effective_chat.id, message_ids=context.user_data.get("keyboardMessages"))
+            del context.user_data["keyboardMessages"]#
             return id 
     return None
 

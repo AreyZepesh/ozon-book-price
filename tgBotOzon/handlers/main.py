@@ -33,6 +33,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.edit_message_text(text="Выбери категорию действий", reply_markup=InlineKeyboardMarkup(cat_keys))
     else:
         await update.message.reply_text(text="Выбери категорию действий", reply_markup=InlineKeyboardMarkup(cat_keys))
+    
+    for x in list(context.user_data.keys()):
+        del context.user_data[x] 
+        
     return CATEGORY
 
 ## SYS
@@ -45,7 +49,7 @@ async def end(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for x in list(context.user_data.keys()):
             del context.user_data[x] 
         await update.callback_query.edit_message_text("Полный конец обеда. Впиливаешь?", reply_markup=None)
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
         await context.bot.delete_message(chat_id=update.effective_chat.id, 
                                     message_id=update.effective_message.id)
     return CONV_END
