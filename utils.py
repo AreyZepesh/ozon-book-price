@@ -1,5 +1,6 @@
 def strToLst(string: str, sep: str = ',', replase_dots = True) -> list:
     """Преобразует строку в список, по указанному разделителю.
+    Удаляет дубли
     Пропускает пустые строки"""
     if string is None: return None
     tmp = []
@@ -11,7 +12,7 @@ def strToLst(string: str, sep: str = ',', replase_dots = True) -> list:
             item = normalizeStr(i)
             
             tmp.append(item)
-    return tmp
+    return list(set(tmp))
 
 def cleanDict(data: dict) -> dict:
     """Нормализует данные в словаре:
