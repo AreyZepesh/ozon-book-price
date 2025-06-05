@@ -255,12 +255,12 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
     password_to_del = "Exterminate"
     if not context.user_data.get('toDelete'):
-        id = await book_buttons(update, context)
-        if id:
+        id_to_del = await book_buttons(update, context)
+        if id_to_del:
             mes = await context.bot.send_message(chat_id=update.effective_chat.id, 
                 text=f"Вы действиетельно хотите удалить книгу и связанные с ней данные из базы? Если да, то введите '{password_to_del}'", 
                 reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]))
-            context.user_data['toDelete'] = (id, mes.id)
+            context.user_data['toDelete'] = (id_to_del, mes.id)
     elif context.user_data.get('toDelete'):
         if update.message and update.message.text == password_to_del:
             book_id = context.user_data.get('toDelete')[0]
@@ -268,12 +268,13 @@ async def del_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             database.delBook(book_id)
 
-            text = f"Книга {book_id}. {title} была стерта из базы!"
+            
             await context.bot.delete_message(chat_id=update.effective_chat.id, 
                                               message_id=update.effective_message.id)
             await context.bot.edit_message_text(chat_id=update.effective_chat.id, 
                                               message_id=context.user_data.get("toDelete")[1],
-                                              text = text, reply_markup=None)
+                                              text = f"Книга {book_id}. {title} была стерта из базы!", 
+                                              reply_markup=None)
             # print(text)
             await context.bot.send_message(chat_id=update.effective_chat.id, text = "Что дальше?", 
                                                 reply_markup=InlineKeyboardMarkup([buttons.get(BACK+END)]) )
