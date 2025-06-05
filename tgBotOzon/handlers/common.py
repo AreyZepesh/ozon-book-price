@@ -128,11 +128,11 @@ def iterMsg(update: Update, context: ContextTypes.DEFAULT_TYPE, listMsg: list) -
 
 ## Conversation
 
-def myConvHandler(input_pattern, state, state_callback, state_handlers: list[MessageHandler|CallbackQueryHandler] = [], forKeyboard: str = None, extra_states: dict = {}) -> ConversationHandler:
+def myConvHandler(input_pattern, state, state_callback, extra_state_handlers: list[MessageHandler|CallbackQueryHandler] = [], forKeyboard: str = None, extra_states: dict = {}) -> ConversationHandler:
     """Создает ConversationHandler, впервую очередь для итерируемых сообщений и списков кнопок. Терминологию страюсь использовать как в ConversationHandler\n
     input_pattern - паттерн (значение callback_data у кнопки, которая начинает диалог) для entry_points в ConversationHandler;\n
     state - обычно state категории: статус, возвращаемой входной и обрабатываемой функцией, и при завершении диалога;\n
-    state_handlers - список хандлеров, обрабатываемых дополнительно. Отрабатываются первыми.\n
+    extra_state_handlers - список хандлеров, обрабатываемых дополнительно. Отрабатываются после встроенных.\n
     callback - вызываемая функция;\n
     forKeyboard - может быть str['inline'|'reply'|'both']. Или None\n
     extra_states - расширение словаря states в ConversationHandler, для дополнительных состояний и хандлеров.
@@ -141,15 +141,15 @@ def myConvHandler(input_pattern, state, state_callback, state_handlers: list[Mes
     @decConv(parent_func) для целевой функции и 
     '@decConvParent' для функции родителя
     """
+    state_handlers = []
     if forKeyboard == 'both' or forKeyboard == 'reply':
         state_handlers.append(MessageHandler(filters.Regex(r'^\d+'), state_callback))
     if forKeyboard == 'both' or forKeyboard == 'inline':
         state_handlers.append(CallbackQueryHandler(state_callback, pattern=f"^{PREV}|{NEXT}$"))
 
-    entry_handler = CallbackQueryHandler(state_callback, pattern=f"^{input_pattern}$")
     conv_hadler = ConversationHandler(
-        entry_points = [entry_handler],
-        states = {state: state_handlers, **extra_states},
+        entry_points = [CallbackQueryHandler(state_callback, pattern=f"^{input_pattern}$")],
+        states = {state: state_handlers + extra_state_handlers, **extra_states},
         fallbacks = [CallbackQueryHandler(state_callback, pattern=f"^{BACK}$"), MessageHandler(None, state_callback)],
         allow_reentry = True,
         map_to_parent= {CONV_END: state}

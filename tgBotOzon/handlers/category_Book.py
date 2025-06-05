@@ -383,7 +383,7 @@ book_callback = [
     myConvHandler(BOOK_LIST, BOOK, book_list, forKeyboard = 'inline'),
 
     myConvHandler(ADD_BOOK, BOOK, add_book, 
-        state_handlers= book_card_handler + [
+        extra_state_handlers = book_card_handler + [
             CallbackQueryHandler(handle_button, pattern=f"^{B_HELP}$"),
             CallbackQueryHandler(handle_button, pattern=f"^{B_SAVE}$"),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input),
