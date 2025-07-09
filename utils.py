@@ -29,16 +29,16 @@ def normalizeStr(string: str) -> str:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
     import re
-    string = re.sub("[^a-zA-Zа-яёА-ЯЁ0-9,.:!?+-]", " ", string)
+    string = re.sub(r"[^a-zA-Zа-яёА-ЯЁ0-9,.:!?+-–]+", " ", string)
     # string = string.replace('\t', ' ')
     # string = string.replace('\r\n', ' ')
     # string = string.replace('\n', ' ')
     # string = string.replace('\u2009', ' ')
     # string = string.replace(' ', ' ') 
-    while '  ' in string:
-        string = string.replace('  ', ' ')
-    string = string.strip()
-    return string
+    # while '  ' in string:
+    #     string = string.replace('  ', ' ')
+    # string = string.strip()
+    return string.strip()
 
 def normalizePrice(string: str) -> int:
     """Нормализует цену, делает из строки число"""
@@ -91,16 +91,19 @@ def csvToDict(csvPath) -> list[dict]:
     
     return data
 
-def strFromComparison(string: str) -> str:
+def strFromComparison(text: str) -> str:
     """Убирает из строки все кроме букв, цифр и пробелов.
     Так же нормализует"""
     import re
-    string = re.sub("ё", "е", string)
-    string = re.sub("Ё", "Е", string)
-    string = re.sub("[^a-zA-Zа-яА-Я0-9]", " ", string)
-    string = normalizeStr(string)
-    string = string.lower()
-    return string
+    # text = re.sub("ё", "е", text)
+    # text = re.sub("Ё", "Е", text)
+    # text = re.sub("[^a-zA-Zа-яА-Я0-9]", " ", text)
+    # text = normalizeStr(text)
+    # text = text.lower()
+    # return text
+    text = text.replace('ё', 'е').replace('Ё', 'Е')
+    text = re.sub(r"[^a-zA-Zа-яА-Я0-9]+", " ", text)
+    return text.strip().lower()
 
 def isTITLEinSTR(title: str, string: str) -> bool:
     """Проверяет вхождение title в string.
@@ -116,7 +119,7 @@ def isTITLEinSTR(title: str, string: str) -> bool:
     string = strFromComparison(string)
     if title in string:
         return True
-    if haveDot and (' ' in title) and (len(title.strip(' ')) > 2):
+    if haveDot and (' ' in title) and (len(title.split(' ')) > 2):
         for word in title.split(' '): 
             if word not in string:
                 return False
