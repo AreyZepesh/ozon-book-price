@@ -29,7 +29,7 @@ def normalizeStr(string: str) -> str:
      - заменяет табуляции на пробелы
      - убирает лишние пробелы"""
     import re
-    string = re.sub(r"[^a-zA-Zа-яёА-ЯЁ0-9,.:!?+-–]+", " ", string)
+    string = re.sub(r"[^a-zA-Zа-яёА-ЯЁ0-9,.!'+-–]+", " ", string)
     # string = string.replace('\t', ' ')
     # string = string.replace('\r\n', ' ')
     # string = string.replace('\n', ' ')
