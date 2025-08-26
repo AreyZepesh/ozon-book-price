@@ -190,10 +190,13 @@ def createViewS(dbname: str) -> None:
                                         price, article, typeSearch
                                     FROM prices
                                     WHERE prices.datetime < (SELECT MAX(datetime) FROM prices)
-                                    GROUP BY book_id, typeSearch
+                                    GROUP BY book_id
                                 )
                                 AS _prices ON _prices.book_id = books.id;
                        """))
+                                    # --GROUP BY book_id, typeSearch
+                                    # Внес изменения в базу, для корректного отображения последней мин цены: 
+                                    # если на исбн цена была месяц назад, то её тоже учитывало при выборе мин из 2 вариантов;
         db.execute(text("""CREATE VIEW prices_stat AS
                             SELECT prices_view_current.book_id,
                                 prices_view_current.book_title,

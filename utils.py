@@ -372,7 +372,8 @@ def getEmail() -> list[list]:
             else:    
                 body.append(email_message.get_payload(decode=True).decode('utf-8'))
             mails.append(body)
-    return reversed(mails)
+    mails.reverse()
+    return mails
 
 def getCodeFromEmail(timeH=0.5) -> str:
     """Возвращает код для озона из писем, за период времени, не более timeH.
@@ -381,9 +382,15 @@ def getCodeFromEmail(timeH=0.5) -> str:
         """Поиск кода в письме html версткой"""
         import bs4
         soup = bs4.BeautifulSoup(body, 'html.parser')
-        res = soup.find('td', string=re.compile('([0-9]{6})'))
-        if res is not None:
-            return normalizeStr(res.text)
+        # res = soup.find('td', string=re.compile('([0-9]{6})'))
+        # TODO в span с комментариями нормально не ищет, поэтому такая затычка
+        res = soup.find_all('span')
+        for r in res:
+            text = r.find(string=re.compile('([0-9]{6})'))
+            if text:
+                return normalizeStr(text.text)
+        # if res is not None:
+        #     return normalizeStr(res.text)
 
     import re
     from datetime import timedelta, datetime
