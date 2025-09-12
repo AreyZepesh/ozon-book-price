@@ -23,7 +23,8 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
     """Сбор данных по странице поиска. Возвращает словарь c минимальной"""
     def _cardData(cardOBJ) -> dict:
         """Подфункция сбора данных с одной карточки"""
-        title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
+        # title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
+        title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsHeadline') and not( contains(., '×') or contains(., 'мес') )]" ).text
         # Для отладки
         # print(f", |{book_title}| >>>  |{title}|")
         if not utils.isTITLEinSTR(book_title, title):
