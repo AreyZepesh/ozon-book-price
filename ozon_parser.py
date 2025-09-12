@@ -23,8 +23,7 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
     """Сбор данных по странице поиска. Возвращает словарь c минимальной"""
     def _cardData(cardOBJ) -> dict:
         """Подфункция сбора данных с одной карточки"""
-        # title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
-        title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsHeadline') and not( contains(., '×') or contains(., 'мес') )]" ).text
+        title = cardOBJ.find_element( By.XPATH, ".//a[@href]//span[contains(@class, 'tsBody500Medium')]" ).text
         # Для отладки
         # print(f", |{book_title}| >>>  |{title}|")
         if not utils.isTITLEinSTR(book_title, title):
@@ -35,7 +34,8 @@ def findOnSearchPage(driver, book_id, book_title, type) -> dict:
         card['book_id'] = book_id
         href = cardOBJ.find_element( By.XPATH, ".//a[@href]" )
         card['article'] = href.get_attribute("href").split('/?')[0].split('-')[-1]
-        card['price']  = utils.normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
+        # card['price']  = utils.normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline')]" ).text)
+        card['price']  = utils.normalizePrice(cardOBJ.find_element( By.XPATH, ".//span[contains(@class, 'tsHeadline') and not( contains(., '×') or contains(., 'мес') )]" ).text)
         card['datetime'] = DATE_TIME
         card['typeSearch'] = type
         return card
@@ -134,7 +134,7 @@ def saveCookie(driver, file='./tmp/new.json'):
 def main():
     chrome_version = utils.getEnv("CHROMIUM_VERSION")
     baseURL = "https://ozon.kz/"
-    driver = getDriver(True, chrome_version)
+    driver = getDriver(False, chrome_version)
     driver.get(baseURL)
     
     try:
